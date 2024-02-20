@@ -99,20 +99,20 @@ export default class ScomMediaPlayer extends Module {
     }
     const result = await fetch(this.url);
     const manifest = await result.text();
+
     this.parser.push(manifest);
     this.parser.end();
     this.parsedData = this.parser.manifest;
     console.log(this.parser.manifest)
 
     this.player.setData({ url: getPath(this.url) });
-    this.videoEl.url = this.url;
-    console.log(await this.videoEl.getPlayer())
-
-    if (this.parsedData?.playlists?.length) {
+    const hasMediaGroup = !this.isEmptyObject(this.parsedData?.mediaGroups?.AUDIO) || !this.isEmptyObject(this.parsedData?.mediaGroups?.VIDEO);
+    const playlist = this.parsedData?.playlists || [];
+    if (hasMediaGroup) {
       this.playlistEl.visible = true;
       this.videoEl.visible = false;
       this.playList.setData({
-        tracks: this.parsedData.playlists,
+        tracks: playlist,
         title: this.parsedData?.title || '',
         description: '',
         picture: ''
@@ -129,6 +129,11 @@ export default class ScomMediaPlayer extends Module {
     this.player.playTrack(data);
   }
 
+  private isEmptyObject(value: any) {
+    if (!value) return true;
+    return Object.keys(value).length === 0;
+  }
+
   private onNext() {
     const tracks = this.playList.tracks;
     const index = tracks.findIndex((track: ITrack) => track.id === this.player.track.id);
@@ -143,6 +148,10 @@ export default class ScomMediaPlayer extends Module {
     const newIndex = (((index + -1) % tracks.length) + tracks.length) % tracks.length;
     this.playList.activeTrack = newIndex;
     this.onPlay(tracks[newIndex])
+  }
+
+  private onStateChanged() {
+    this.playList.togglePlay(this.player.isPlaying);
   }
 
   private updateTag(type: 'light' | 'dark', value: any) {
@@ -270,6 +279,7 @@ export default class ScomMediaPlayer extends Module {
               class={aspectRatioStyle}
               onNext={this.onNext}
               onPrev={this.onPrev}
+              onStateChanged={this.onStateChanged}
             />
           </i-panel>
         </i-stack>

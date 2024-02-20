@@ -61,6 +61,7 @@ declare module "@scom/scom-media-player/common/playList.tsx" {
         private renderTracks;
         private onTrackClick;
         private updateActiveTrack;
+        togglePlay(value: boolean): void;
         init(): Promise<void>;
         render(): any;
     }
@@ -75,6 +76,7 @@ declare module "@scom/scom-media-player/common/player.tsx" {
         url?: string;
         onNext?: callbackType;
         onPrev?: callbackType;
+        onStateChanged?: callbackType;
     }
     global {
         namespace JSX {
@@ -108,12 +110,14 @@ declare module "@scom/scom-media-player/common/player.tsx" {
         private isMinimized;
         onNext: callbackType;
         onPrev: callbackType;
+        onStateChanged: callbackType;
         constructor(parent?: Container, options?: any);
         static create(options?: ScomMediaPlayerPlayerElement, parent?: Container): Promise<ScomMediaPlayerPlayer>;
         get track(): ITrack;
         set track(value: ITrack);
         get url(): string;
         set url(value: string);
+        get isPlaying(): boolean;
         setData(data: IPlayer): Promise<void>;
         playTrack(track: ITrack): void;
         private renderTrack;
@@ -179,8 +183,10 @@ declare module "@scom/scom-media-player" {
         private loadLib;
         private renderUI;
         private onPlay;
+        private isEmptyObject;
         private onNext;
         private onPrev;
+        private onStateChanged;
         private updateTag;
         setTag(value: any): void;
         private updateStyle;

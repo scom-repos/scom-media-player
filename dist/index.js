@@ -94,14 +94,24 @@ define("@scom/scom-media-player/common/playList.tsx", ["require", "exports", "@i
         updateActiveTrack(target) {
             if (this.currentTrackEl) {
                 this.currentTrackEl.background.color = Theme.action.hoverBackground;
-                // const icon = this.currentTrackEl.querySelector('i-icon') as Icon;
-                // if (icon) icon.name = 'angle-right';
+                const icon = this.currentTrackEl.querySelector('i-icon');
+                if (icon)
+                    icon.name = 'angle-right';
             }
             if (target) {
                 target.background.color = Theme.action.activeBackground;
-                // const icon = target.querySelector('i-icon') as Icon;
-                // if (icon) icon.name = 'pause';
+                const icon = target.querySelector('i-icon');
+                if (icon)
+                    icon.name = 'pause-circle';
                 this.currentTrackEl = target;
+            }
+        }
+        togglePlay(value) {
+            if (this.currentTrackEl) {
+                this.currentTrackEl.background.color = Theme.action.hoverBackground;
+                const icon = this.currentTrackEl.querySelector('i-icon');
+                if (icon)
+                    icon.name = value ? 'pause-circle' : 'angle-right';
             }
         }
         async init() {
@@ -159,6 +169,9 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
         set url(value) {
             this._data.url = value ?? '';
         }
+        get isPlaying() {
+            return this.player?.played() && !this.player?.paused();
+        }
         async setData(data) {
             this.isMinimized = false;
             this._data = { ...data };
@@ -191,8 +204,9 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
             else {
                 this.track = track;
                 this.player.pause();
+                const uri = track.uri.trim();
                 this.player.src({
-                    src: this.url + '/' + track.uri,
+                    src: track.uri.startsWith('//') || track.uri.startsWith('http') ? uri : this.url + '/' + uri,
                     type: 'application/x-mpegURL'
                 });
                 this.player.ready(function () {
@@ -229,6 +243,8 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
                 this.player.pause();
                 this.iconPlay.name = 'play-circle';
             }
+            if (this.onStateChanged)
+                this.onStateChanged();
         }
         playNextTrack() {
             if (this.onNext)
@@ -388,6 +404,7 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
             super.init();
             this.onNext = this.getAttribute('onNext', true) || this.onNext;
             this.onPrev = this.getAttribute('onPrev', true) || this.onPrev;
+            this.onStateChanged = this.getAttribute('onStateChanged', true) || this.onStateChanged;
             const track = this.getAttribute('track', true);
             const url = this.getAttribute('url', true);
             this.renderControls();
@@ -520,13 +537,13 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
             this.parsedData = this.parser.manifest;
             console.log(this.parser.manifest);
             this.player.setData({ url: (0, utils_1.getPath)(this.url) });
-            this.videoEl.url = this.url;
-            console.log(await this.videoEl.getPlayer());
-            if (this.parsedData?.playlists?.length) {
+            const hasMediaGroup = !this.isEmptyObject(this.parsedData?.mediaGroups?.AUDIO) || !this.isEmptyObject(this.parsedData?.mediaGroups?.VIDEO);
+            const playlist = this.parsedData?.playlists || [];
+            if (hasMediaGroup) {
                 this.playlistEl.visible = true;
                 this.videoEl.visible = false;
                 this.playList.setData({
-                    tracks: this.parsedData.playlists,
+                    tracks: playlist,
                     title: this.parsedData?.title || '',
                     description: '',
                     picture: ''
@@ -543,6 +560,11 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
                 return;
             this.player.playTrack(data);
         }
+        isEmptyObject(value) {
+            if (!value)
+                return true;
+            return Object.keys(value).length === 0;
+        }
         onNext() {
             const tracks = this.playList.tracks;
             const index = tracks.findIndex((track) => track.id === this.player.track.id);
@@ -556,6 +578,9 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
             const newIndex = (((index + -1) % tracks.length) + tracks.length) % tracks.length;
             this.playList.activeTrack = newIndex;
             this.onPlay(tracks[newIndex]);
+        }
+        onStateChanged() {
+            this.playList.togglePlay(this.player.isPlaying);
         }
         updateTag(type, value) {
             this.tag[type] = this.tag[type] ?? {};
@@ -631,7 +656,7 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
                                 }
                             }
                         ] },
-                        this.$render("i-scom-media-player--player", { id: "player", display: 'block', width: '100%', height: '100%', background: { color: Theme.background.paper }, class: index_css_1.aspectRatioStyle, onNext: this.onNext, onPrev: this.onPrev })))));
+                        this.$render("i-scom-media-player--player", { id: "player", display: 'block', width: '100%', height: '100%', background: { color: Theme.background.paper }, class: index_css_1.aspectRatioStyle, onNext: this.onNext, onPrev: this.onPrev, onStateChanged: this.onStateChanged })))));
         }
     };
     ScomMediaPlayer = __decorate([

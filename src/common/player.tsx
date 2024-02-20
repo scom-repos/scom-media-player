@@ -24,6 +24,7 @@ interface ScomMediaPlayerPlayerElement extends ControlElement {
   url?: string;
   onNext?: callbackType;
   onPrev?: callbackType;
+  onStateChanged?: callbackType;
 }
 
 declare global {
@@ -63,6 +64,7 @@ export class ScomMediaPlayerPlayer extends Module {
 
   onNext: callbackType;
   onPrev: callbackType;
+  onStateChanged: callbackType;
 
   constructor(parent?: Container, options?: any) {
     super(parent, options);
@@ -86,6 +88,10 @@ export class ScomMediaPlayerPlayer extends Module {
   }
   set url(value: string) {
     this._data.url = value ?? '';
+  }
+
+  get isPlaying() {
+    return this.player?.played() && !this.player?.paused();
   }
 
   async setData(data: IPlayer) {
@@ -116,8 +122,9 @@ export class ScomMediaPlayerPlayer extends Module {
     } else {
       this.track = track;
       this.player.pause();
+      const uri = track.uri.trim();
       this.player.src({
-        src: this.url + '/' + track.uri,
+        src: track.uri.startsWith('//') || track.uri.startsWith('http') ? uri : this.url + '/' + uri,
         type: 'application/x-mpegURL'
       })
       this.player.ready(function() {
@@ -162,6 +169,7 @@ export class ScomMediaPlayerPlayer extends Module {
       this.player.pause();
       this.iconPlay.name = 'play-circle';
     }
+    if (this.onStateChanged) this.onStateChanged();
   }
 
   private playNextTrack() {
@@ -473,6 +481,7 @@ export class ScomMediaPlayerPlayer extends Module {
     super.init();
     this.onNext = this.getAttribute('onNext', true) || this.onNext;
     this.onPrev = this.getAttribute('onPrev', true) || this.onPrev;
+    this.onStateChanged = this.getAttribute('onStateChanged', true) || this.onStateChanged;
     const track = this.getAttribute('track', true);
     const url = this.getAttribute('url', true);
     this.renderControls();

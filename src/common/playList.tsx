@@ -7,7 +7,8 @@ import {
   Label,
   Container,
   VStack,
-  Control
+  Control,
+  Icon
 } from '@ijstech/components';
 import { ITrack } from '../inteface';
 const Theme = Styles.Theme.ThemeVars;
@@ -171,14 +172,22 @@ export class ScomMediaPlayerPlaylist extends Module {
   private updateActiveTrack(target: Control) {
     if (this.currentTrackEl) {
       this.currentTrackEl.background.color = Theme.action.hoverBackground;
-      // const icon = this.currentTrackEl.querySelector('i-icon') as Icon;
-      // if (icon) icon.name = 'angle-right';
+      const icon = this.currentTrackEl.querySelector('i-icon') as Icon;
+      if (icon) icon.name = 'angle-right';
     }
     if (target) {
       target.background.color = Theme.action.activeBackground;
-      // const icon = target.querySelector('i-icon') as Icon;
-      // if (icon) icon.name = 'pause';
+      const icon = target.querySelector('i-icon') as Icon;
+      if (icon) icon.name = 'pause-circle';
       this.currentTrackEl = target;
+    }
+  }
+
+  togglePlay(value: boolean) {
+    if (this.currentTrackEl) {
+      this.currentTrackEl.background.color = Theme.action.hoverBackground;
+      const icon = this.currentTrackEl.querySelector('i-icon') as Icon;
+      if (icon) icon.name = value ? 'pause-circle' : 'angle-right';
     }
   }
 
