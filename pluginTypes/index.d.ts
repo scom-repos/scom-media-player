@@ -182,8 +182,11 @@ declare module "@scom/scom-media-player" {
         getData(): IMediaPlayer;
         private loadLib;
         private renderUI;
-        private onPlay;
+        private checkParsedData;
         private isEmptyObject;
+        private renderVideo;
+        private renderPlaylist;
+        private onPlay;
         private onNext;
         private onPrev;
         private onStateChanged;

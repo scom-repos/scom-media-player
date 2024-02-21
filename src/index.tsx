@@ -104,34 +104,57 @@ export default class ScomMediaPlayer extends Module {
     this.parser.end();
     this.parsedData = this.parser.manifest;
     console.log(this.parser.manifest)
-
     this.player.setData({ url: getPath(this.url) });
-    const hasMediaGroup = !this.isEmptyObject(this.parsedData?.mediaGroups?.AUDIO) || !this.isEmptyObject(this.parsedData?.mediaGroups?.VIDEO);
-    const playlist = this.parsedData?.playlists || [];
-    if (hasMediaGroup) {
-      this.playlistEl.visible = true;
-      this.videoEl.visible = false;
-      this.playList.setData({
-        tracks: playlist,
-        title: this.parsedData?.title || '',
-        description: '',
-        picture: ''
-      });
-    } else {
-      this.playlistEl.visible = false;
-      this.videoEl.visible = true;
-      this.videoEl.url = this.url;
-    }
+    this.checkParsedData();
   }
 
-  private onPlay(data: ITrack) {
-    if (!data) return;
-    this.player.playTrack(data);
+  private checkParsedData() {
+    if (!this.parsedData) return;
+    // TODO: check
+    const playlists = this.parsedData.playlists || [];
+    const segments = this.parsedData.segments || [];
+    const isStreamVideo = segments.length && segments.every(segment => /\.ts$/.test(segment.uri || ''));
+    const isVideo = playlists.some(playlist => playlist.attributes.RESOLUTION);
+    if ((playlists.length && !isVideo) || !isStreamVideo) {
+      let value = [...playlists];
+      const haveAudioGroup = !this.isEmptyObject(this.parsedData?.mediaGroups?.AUDIO);
+      const isAudioOnly = playlists.length && playlists.every(playlist => !playlist.attributes.RESOLUTION);
+      if (isAudioOnly && haveAudioGroup) {
+        value = [{ uri: this.url, title: '' }];
+      } else if (!isStreamVideo) {
+        value = [...segments];
+      }
+      this.renderPlaylist(value);
+    } else {
+      this.renderVideo();
+    }
   }
 
   private isEmptyObject(value: any) {
     if (!value) return true;
     return Object.keys(value).length === 0;
+  }
+
+  private renderVideo() {
+    this.playlistEl.visible = false;
+    this.videoEl.visible = true;
+    this.videoEl.url = this.url;
+  }
+
+  private renderPlaylist(tracks: any[]) {
+    this.playlistEl.visible = true;
+    this.videoEl.visible = false;
+    this.playList.setData({
+      tracks,
+      title: this.parsedData?.title || '',
+      description: '',
+      picture: ''
+    });
+  }
+
+  private onPlay(data: ITrack) {
+    if (!data) return;
+    this.player.playTrack(data);
   }
 
   private onNext() {

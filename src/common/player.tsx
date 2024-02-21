@@ -155,6 +155,7 @@ export class ScomMediaPlayerPlayer extends Module {
       width={'100%'}
       onChanged={() => {
         this.player.currentTime(this.trackRange.value / 1000);
+        this.lblStart.caption = moment(this.trackRange.value).format('mm:ss');
       }}
     ></i-range>
     this.pnlRange.appendChild(this.trackRange);

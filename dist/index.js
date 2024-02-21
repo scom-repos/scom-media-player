@@ -230,6 +230,7 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
             this.pnlRange.clearInnerHTML();
             this.trackRange = this.$render("i-range", { min: 0, max: duration, value: 0, step: 1, width: '100%', onChanged: () => {
                     this.player.currentTime(this.trackRange.value / 1000);
+                    this.lblStart.caption = (0, components_2.moment)(this.trackRange.value).format('mm:ss');
                 } });
             this.pnlRange.appendChild(this.trackRange);
             this.lblEnd.caption = (0, components_2.moment)(duration).format('mm:ss');
@@ -537,33 +538,55 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
             this.parsedData = this.parser.manifest;
             console.log(this.parser.manifest);
             this.player.setData({ url: (0, utils_1.getPath)(this.url) });
-            const hasMediaGroup = !this.isEmptyObject(this.parsedData?.mediaGroups?.AUDIO) || !this.isEmptyObject(this.parsedData?.mediaGroups?.VIDEO);
-            const playlist = this.parsedData?.playlists || [];
-            if (hasMediaGroup) {
-                this.playlistEl.visible = true;
-                this.videoEl.visible = false;
-                this.playList.setData({
-                    tracks: playlist,
-                    title: this.parsedData?.title || '',
-                    description: '',
-                    picture: ''
-                });
+            this.checkParsedData();
+        }
+        checkParsedData() {
+            if (!this.parsedData)
+                return;
+            const playlists = this.parsedData.playlists || [];
+            const segments = this.parsedData.segments || [];
+            const isStreamVideo = segments.length && segments.every(segment => /\.ts$/.test(segment.uri || ''));
+            const isVideo = playlists.some(playlist => playlist.attributes.RESOLUTION);
+            if ((playlists.length && !isVideo) || !isStreamVideo) {
+                let value = [...playlists];
+                const haveAudioGroup = !this.isEmptyObject(this.parsedData?.mediaGroups?.AUDIO);
+                const isAudioOnly = playlists.length && playlists.every(playlist => !playlist.attributes.RESOLUTION);
+                if (isAudioOnly && haveAudioGroup) {
+                    value = [{ uri: this.url, title: '' }];
+                }
+                else if (!isStreamVideo) {
+                    value = [...segments];
+                }
+                this.renderPlaylist(value);
             }
             else {
-                this.playlistEl.visible = false;
-                this.videoEl.visible = true;
-                this.videoEl.url = this.url;
+                this.renderVideo();
             }
-        }
-        onPlay(data) {
-            if (!data)
-                return;
-            this.player.playTrack(data);
         }
         isEmptyObject(value) {
             if (!value)
                 return true;
             return Object.keys(value).length === 0;
+        }
+        renderVideo() {
+            this.playlistEl.visible = false;
+            this.videoEl.visible = true;
+            this.videoEl.url = this.url;
+        }
+        renderPlaylist(tracks) {
+            this.playlistEl.visible = true;
+            this.videoEl.visible = false;
+            this.playList.setData({
+                tracks,
+                title: this.parsedData?.title || '',
+                description: '',
+                picture: ''
+            });
+        }
+        onPlay(data) {
+            if (!data)
+                return;
+            this.player.playTrack(data);
         }
         onNext() {
             const tracks = this.playList.tracks;
