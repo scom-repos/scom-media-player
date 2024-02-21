@@ -543,6 +543,7 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
         checkParsedData() {
             if (!this.parsedData)
                 return;
+            // TODO: check
             const playlists = this.parsedData.playlists || [];
             const segments = this.parsedData.segments || [];
             const isStreamVideo = segments.length && segments.every(segment => /\.ts$/.test(segment.uri || ''));
@@ -605,12 +606,67 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
         onStateChanged() {
             this.playList.togglePlay(this.player.isPlaying);
         }
-        updateTag(type, value) {
-            this.tag[type] = this.tag[type] ?? {};
-            for (let prop in value) {
-                if (value.hasOwnProperty(prop))
-                    this.tag[type][prop] = value[prop];
-            }
+        getConfigurators() {
+            const self = this;
+            return [
+                {
+                    name: 'Builder Configurator',
+                    target: 'Builders',
+                    getActions: () => {
+                        return this._getActions();
+                    },
+                    getData: this.getData.bind(this),
+                    setData: this.setData.bind(this),
+                    getTag: this.getTag.bind(this),
+                    setTag: this.setTag.bind(this)
+                }
+            ];
+        }
+        getPropertiesSchema() {
+            const schema = {
+                type: "object",
+                required: ["url"],
+                properties: {
+                    url: {
+                        type: "string"
+                    }
+                }
+            };
+            return schema;
+        }
+        _getActions() {
+            const propertiesSchema = this.getPropertiesSchema();
+            const actions = [
+                {
+                    name: 'Edit',
+                    icon: 'edit',
+                    command: (builder, userInputData) => {
+                        let oldData = { url: '' };
+                        return {
+                            execute: () => {
+                                oldData = { ...this._data };
+                                if (userInputData?.url)
+                                    this._data.url = userInputData.url;
+                                this.renderUI();
+                                if (builder?.setData)
+                                    builder.setData(this._data);
+                            },
+                            undo: () => {
+                                this._data = { ...oldData };
+                                this.renderUI();
+                                if (builder?.setData)
+                                    builder.setData(this._data);
+                            },
+                            redo: () => { }
+                        };
+                    },
+                    userInputDataSchema: propertiesSchema
+                }
+            ];
+            return actions;
+        }
+        getTag() {
+            return this.tag;
         }
         setTag(value) {
             const newValue = value || {};
@@ -623,6 +679,13 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
                 }
             }
             this.updateTheme();
+        }
+        updateTag(type, value) {
+            this.tag[type] = this.tag[type] ?? {};
+            for (let prop in value) {
+                if (value.hasOwnProperty(prop))
+                    this.tag[type][prop] = value[prop];
+            }
         }
         updateStyle(name, value) {
             value ?
