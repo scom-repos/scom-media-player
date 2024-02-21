@@ -7,8 +7,10 @@ import {
   Styles,
   Video,
   RequireJS,
-  application,
-  Panel
+  Panel,
+  IDataSchema,
+  LibPath,
+  application
 } from '@ijstech/components'
 import { ScomMediaPlayerPlayer, ScomMediaPlayerPlaylist } from './common/index'
 import { ITrack } from './inteface'
@@ -27,7 +29,7 @@ interface IMediaPlayer {
 
 const reqs = ['m3u8-parser'];
 RequireJS.config({
-  baseUrl: `${application.currentModulePath}/libs/@scom/scom-media-player/lib`,
+  baseUrl: `${application.currentModuleDir}/lib`,
   paths: {
     'm3u8-parser': 'm3u8-parser.min'
   }
@@ -75,12 +77,12 @@ export default class ScomMediaPlayer extends Module {
     this._data.url = value;
   }
 
-  async setData(value: IMediaPlayer) {
+  private async setData(value: IMediaPlayer) {
     this._data = value;
     await this.renderUI();
   }
 
-  getData() {
+  private getData() {
     return this._data;
   }
 
@@ -177,15 +179,70 @@ export default class ScomMediaPlayer extends Module {
     this.playList.togglePlay(this.player.isPlaying);
   }
 
-  private updateTag(type: 'light' | 'dark', value: any) {
-    this.tag[type] = this.tag[type] ?? {};
-    for (let prop in value) {
-      if (value.hasOwnProperty(prop))
-        this.tag[type][prop] = value[prop];
-    }
+  getConfigurators() {
+    const self = this;
+    return [
+      {
+        name: 'Builder Configurator',
+        target: 'Builders',
+        getActions: () => {
+          return this._getActions();
+        },
+        getData: this.getData.bind(this),
+        setData: this.setData.bind(this),
+        getTag: this.getTag.bind(this),
+        setTag: this.setTag.bind(this)
+      }
+    ]
   }
 
-  setTag(value: any) {
+  private getPropertiesSchema() {
+    const schema: IDataSchema = {
+      type: "object",
+      required: ["url"],
+      properties: {
+        url: {
+          type: "string"
+        }
+      }
+    };
+    return schema;
+  }
+
+  private _getActions() {
+    const propertiesSchema = this.getPropertiesSchema();
+    const actions = [
+      {
+        name: 'Edit',
+        icon: 'edit',
+        command: (builder: any, userInputData: any) => {
+          let oldData = {url: ''};
+          return {
+            execute: () => {
+              oldData = {...this._data};
+              if (userInputData?.url) this._data.url = userInputData.url;
+              this.renderUI();
+              if (builder?.setData) builder.setData(this._data);
+            },
+            undo: () => {
+              this._data = {...oldData};
+              this.renderUI();
+              if (builder?.setData) builder.setData(this._data);
+            },
+            redo: () => {}
+          }
+        },
+        userInputDataSchema: propertiesSchema as IDataSchema
+      }
+    ]
+    return actions
+  }
+
+  private getTag() {
+    return this.tag;
+  }
+
+  private setTag(value: any) {
     const newValue = value || {};
     for (let prop in newValue) {
       if (newValue.hasOwnProperty(prop)) {
@@ -196,6 +253,14 @@ export default class ScomMediaPlayer extends Module {
       }
     }
     this.updateTheme();
+  }
+
+  private updateTag(type: 'light' | 'dark', value: any) {
+    this.tag[type] = this.tag[type] ?? {};
+    for (let prop in value) {
+      if (value.hasOwnProperty(prop))
+        this.tag[type][prop] = value[prop];
+    }
   }
 
   private updateStyle(name: string, value: any) {
