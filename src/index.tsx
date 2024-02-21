@@ -27,7 +27,7 @@ interface IMediaPlayer {
 
 const reqs = ['m3u8-parser'];
 RequireJS.config({
-  baseUrl: `${application.currentModulePath}/libs/@scom/scom-media-player/lib`,
+  baseUrl: `${application.currentModuleDir}/lib`,
   paths: {
     'm3u8-parser': 'm3u8-parser.min'
   }

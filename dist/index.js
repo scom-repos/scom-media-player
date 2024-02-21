@@ -484,7 +484,7 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
     const Theme = components_4.Styles.Theme.ThemeVars;
     const reqs = ['m3u8-parser'];
     components_4.RequireJS.config({
-        baseUrl: `${components_4.application.currentModulePath}/libs/@scom/scom-media-player/lib`,
+        baseUrl: `${components_4.application.currentModuleDir}/lib`,
         paths: {
             'm3u8-parser': 'm3u8-parser.min'
         }
