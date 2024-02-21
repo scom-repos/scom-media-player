@@ -1,5 +1,10 @@
 #EXTM3U
-#EXTINF:180,Audio file
-https://playertest.longtailvideo.com/adaptive/alt-audio-no-video/sintel/playlist.m3u8
-#EXTINF:72,Video file
-//d2zihajmogu5jn.cloudfront.net/sintel/master.m3u8
+#EXTINF:90,penguinmusic - Better Day
+https://cdn.pixabay.com/audio/2024/01/16/audio_e2b992254f.mp3
+#EXTINF:116,AlexGrohl - Sad Soul (Chasing a Feeling)
+https://cdn.pixabay.com/audio/2024/01/13/audio_640c5ca4a9.mp3
+#EXTINF:139,William_King - Separation
+https://cdn.pixabay.com/audio/2024/01/10/audio_e1d20b0759.mp3
+#EXTINF:129,AlexGrohl - Mellow Future Bass (Bounce On it)
+https://cdn.pixabay.com/audio/2024/01/04/audio_896a3bc8f7.mp3
+

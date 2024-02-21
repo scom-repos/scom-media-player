@@ -69,6 +69,7 @@ define("@scom/scom-media-player/common/playList.tsx", ["require", "exports", "@i
             this.lblTitle.caption = this.title;
             this.lblDesc.caption = this.description;
             this.imgPlaylist.url = this.picture;
+            this.pnlHeader.visible = !!(this.title || this.description || this.picture);
         }
         renderTracks() {
             this.pnlPlaylist.clearInnerHTML();
@@ -123,18 +124,18 @@ define("@scom/scom-media-player/common/playList.tsx", ["require", "exports", "@i
         }
         render() {
             return (this.$render("i-vstack", { width: '100%', gap: "1rem" },
-                this.$render("i-hstack", { verticalAlignment: 'center', gap: "0.5rem", background: { color: Theme.background.paper }, padding: { top: '0.75rem', bottom: '0.75rem', left: '1rem', right: '1rem' } },
+                this.$render("i-hstack", { id: "pnlHeader", verticalAlignment: 'center', gap: "0.5rem", background: { color: Theme.background.paper }, padding: { top: '0.75rem', bottom: '0.75rem', left: '1rem', right: '1rem' } },
                     this.$render("i-image", { id: "imgPlaylist", url: "", width: '8rem', height: 'auto', objectFit: 'cover', border: { radius: '0.25rem' }, stack: { shrink: '0' } }),
                     this.$render("i-vstack", { gap: "0.25rem" },
                         this.$render("i-label", { caption: '', font: { size: '1.25rem' }, id: 'lblTitle' }),
                         this.$render("i-label", { caption: '', font: { size: '0.875rem', color: Theme.text.secondary }, id: 'lblDesc' }))),
                 this.$render("i-hstack", { verticalAlignment: 'center', gap: "1rem", padding: { top: '1rem', bottom: '1rem' } },
                     this.$render("i-panel", { hover: { opacity: 0.5 }, cursor: 'pointer' },
-                        this.$render("i-icon", { name: "share-alt", width: '1.5rem', height: '1.5rem', fill: Theme.text.primary })),
+                        this.$render("i-icon", { name: "share-alt", width: '1.25rem', height: '1.25rem', fill: Theme.text.primary })),
                     this.$render("i-panel", { hover: { opacity: 0.5 }, cursor: 'pointer' },
-                        this.$render("i-icon", { name: "heart", width: '1.5rem', height: '1.5rem', fill: Theme.text.primary }))),
+                        this.$render("i-icon", { name: "heart", width: '1.25rem', height: '1.25rem', fill: Theme.text.primary }))),
                 this.$render("i-label", { caption: 'Tracks', font: { weight: 600, size: '1rem' } }),
-                this.$render("i-vstack", { id: "pnlPlaylist", margin: { top: '0.75rem' } })));
+                this.$render("i-vstack", { id: "pnlPlaylist", margin: { top: '0.75rem', bottom: '0.75rem' } })));
         }
     };
     ScomMediaPlayerPlaylist = __decorate([
@@ -151,6 +152,8 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
         constructor(parent, options) {
             super(parent, options);
             this.isMinimized = false;
+            this.isRepeat = false;
+            this.isProcessing = false;
         }
         static async create(options, parent) {
             let self = new this(parent, options);
@@ -188,6 +191,19 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
                 this.player.on('ended', () => {
                     if (self.iconPlay)
                         self.iconPlay.name = 'play-circle';
+                    if (self.isRepeat) {
+                        self.player.play();
+                        self.iconPlay.name = 'pause-circle';
+                        if (self.onStateChanged)
+                            self.onStateChanged();
+                    }
+                    else {
+                        if (!self.isProcessing) {
+                            self.playNextTrack();
+                            self.iconPlay.name = 'pause-circle';
+                        }
+                        self.isProcessing = true;
+                    }
                 });
                 this.player.on('loadedmetadata', () => {
                     self.updateDuration();
@@ -197,17 +213,18 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
         playTrack(track) {
             if (!this.player)
                 return;
+            this.isProcessing = false;
             const self = this;
             if (this.track?.uri && this.track.uri === track.uri) {
                 this.togglePlay();
             }
             else {
-                this.track = track;
                 this.player.pause();
                 const uri = track.uri.trim();
+                this.track = { ...track };
                 this.player.src({
                     src: track.uri.startsWith('//') || track.uri.startsWith('http') ? uri : this.url + '/' + uri,
-                    type: 'application/x-mpegURL'
+                    type: self.getTrackType(track.uri)
                 });
                 this.player.ready(function () {
                     self.renderTrack();
@@ -215,6 +232,9 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
                 });
                 this.iconPlay.name = 'pause-circle';
             }
+        }
+        getTrackType(url) {
+            return url.endsWith('.mp3') ? 'audio/mp3' : 'application/x-mpegURL';
         }
         renderTrack() {
             this.imgTrack.url = this.track?.poster || '';
@@ -225,7 +245,7 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
         updateDuration() {
             const duration = (this.player?.duration() || 0) * 1000;
             this.lblEnd.caption = '00:00';
-            if (duration <= 0)
+            if (duration <= 0 || !Number.isFinite(duration))
                 return;
             this.pnlRange.clearInnerHTML();
             this.trackRange = this.$render("i-range", { min: 0, max: duration, value: 0, step: 1, width: '100%', onChanged: () => {
@@ -260,6 +280,10 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
                 this.playTrack(this.track);
         }
         onCollect() { }
+        onRepeat() {
+            this.isRepeat = !this.isRepeat;
+            this.iconRepeat.fill = this.isRepeat ? Theme.colors.success.main : Theme.text.primary;
+        }
         onExpand(target, event) {
             event.stopPropagation();
             if (!window.matchMedia('(max-width: 767px)').matches)
@@ -338,16 +362,7 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
                 ] },
                 this.$render("i-vstack", { gap: "0.25rem", verticalAlignment: 'center' },
                     this.$render("i-label", { id: "lblTrack", caption: '', font: { weight: 600, size: 'clamp(1rem, 0.95rem + 0.25vw, 1.25rem)' }, lineHeight: '1.375rem', maxWidth: '100%', textOverflow: 'ellipsis' }),
-                    this.$render("i-label", { id: "lblArtist", caption: '', font: { size: 'clamp(0.75rem, 0.7rem + 0.25vw, 1rem)' } })),
-                this.$render("i-panel", { cursor: 'pointer', hover: { opacity: 0.5 }, mediaQueries: [
-                        {
-                            maxWidth: '767px',
-                            properties: {
-                                visible: false
-                            }
-                        }
-                    ] },
-                    this.$render("i-icon", { name: 'heart', width: '1.25rem', height: '1.25rem', fill: Theme.text.primary }))));
+                    this.$render("i-label", { id: "lblArtist", caption: '', font: { size: 'clamp(0.75rem, 0.7rem + 0.25vw, 1rem)' } }))));
             this.pnlTimeline = (this.$render("i-vstack", { id: "pnlTimeline", width: '100%', mediaQueries: [
                     {
                         maxWidth: '767px',
@@ -382,8 +397,8 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
                         this.$render("i-icon", { id: "iconPlay", name: "play-circle", width: '1.75rem', height: '1.75rem', fill: Theme.text.primary })),
                     this.$render("i-vstack", { verticalAlignment: 'center', horizontalAlignment: 'center', cursor: 'pointer', hover: { opacity: 0.5 }, onClick: () => this.playNextTrack() },
                         this.$render("i-icon", { name: "step-forward", width: '1rem', height: '1rem', fill: Theme.text.primary }))),
-                this.$render("i-panel", { cursor: 'pointer', hover: { opacity: 0.5 } },
-                    this.$render("i-icon", { name: "redo", width: '1rem', height: '1rem', fill: Theme.text.primary }))));
+                this.$render("i-panel", { cursor: 'pointer', hover: { opacity: 0.5 }, onClick: () => this.onRepeat() },
+                    this.$render("i-icon", { id: "iconRepeat", name: "redo", width: '0.875rem', height: '0.875rem', fill: Theme.text.primary }))));
             this.pnlFooter = (this.$render("i-hstack", { id: "pnlFooter", verticalAlignment: 'center', horizontalAlignment: 'space-between', gap: '1.25rem', width: '100%', margin: { top: '1rem' }, mediaQueries: [
                     {
                         maxWidth: '767px',
@@ -391,15 +406,17 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
                     }
                 ] },
                 this.$render("i-panel", { cursor: 'pointer', hover: { opacity: 0.5 } },
-                    this.$render("i-icon", { name: "music", width: '1.25rem', height: '1.25rem', fill: Theme.text.primary })),
+                    this.$render("i-icon", { name: "music", width: '1rem', height: '1rem', fill: Theme.text.primary })),
                 this.$render("i-hstack", { verticalAlignment: "center", gap: "0.25rem", cursor: 'pointer', onClick: this.onCollect },
                     this.$render("i-panel", { cursor: 'pointer', hover: { opacity: 0.5 } },
-                        this.$render("i-icon", { name: "exclamation-circle", width: '1.25rem', height: '1.25rem', fill: Theme.text.primary })),
+                        this.$render("i-icon", { name: "exclamation-circle", width: '1rem', height: '1rem', fill: Theme.text.primary })),
                     this.$render("i-label", { caption: 'Collect', font: { size: '0.875rem', weight: 600 } })),
                 this.$render("i-panel", { cursor: 'pointer', hover: { opacity: 0.5 } },
-                    this.$render("i-icon", { name: "share", width: '1.25rem', height: '1.25rem', fill: Theme.text.primary }))));
+                    this.$render("i-icon", { name: "share-alt", width: '1rem', height: '1rem', fill: Theme.text.primary }))));
             this.video = this.$render("i-video", { id: "video", isStreaming: true, visible: false, url: "" });
             this.playerGrid.append(this.imgTrack, this.video, this.pnlInfo, this.pnlControls, this.pnlTimeline, this.pnlFooter);
+        }
+        resizeLayout(mobile) {
         }
         init() {
             super.init();
@@ -451,7 +468,7 @@ define("@scom/scom-media-player/common/index.ts", ["require", "exports", "@scom/
 define("@scom/scom-media-player/index.css.ts", ["require", "exports", "@ijstech/components"], function (require, exports, components_3) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.customVideoStyle = exports.aspectRatioStyle = void 0;
+    exports.customScrollStyle = exports.customVideoStyle = exports.aspectRatioStyle = void 0;
     exports.aspectRatioStyle = components_3.Styles.style({
         aspectRatio: '0.58 / 1'
     });
@@ -460,6 +477,23 @@ define("@scom/scom-media-player/index.css.ts", ["require", "exports", "@ijstech/
             'i-video video': {
                 aspectRatio: '16 / 9'
             }
+        }
+    });
+    exports.customScrollStyle = components_3.Styles.style({
+        $nest: {
+            '&::-webkit-scrollbar-track': {
+                borderRadius: '4px',
+                border: '1px solid transparent',
+                backgroundColor: 'unset'
+            },
+            '&::-webkit-scrollbar': {
+                width: '4px',
+                backgroundColor: 'unset'
+            },
+            '&::-webkit-scrollbar-thumb': {
+                borderRadius: '4px',
+                background: 'var(--background-default) 0% 0% no-repeat padding-box'
+            },
         }
     });
 });
@@ -546,9 +580,9 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
             // TODO: check
             const playlists = this.parsedData.playlists || [];
             const segments = this.parsedData.segments || [];
-            const isStreamVideo = segments.length && segments.every(segment => /\.ts$/.test(segment.uri || ''));
+            const isStreamVideo = segments.every(segment => /\.ts$/.test(segment.uri || ''));
             const isVideo = playlists.some(playlist => playlist.attributes.RESOLUTION);
-            if ((playlists.length && !isVideo) || !isStreamVideo) {
+            if ((playlists.length && !isVideo) || (segments.length && !isStreamVideo)) {
                 let value = [...playlists];
                 const haveAudioGroup = !this.isEmptyObject(this.parsedData?.mediaGroups?.AUDIO);
                 const isAudioOnly = playlists.length && playlists.every(playlist => !playlist.attributes.RESOLUTION);
@@ -591,14 +625,14 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
         }
         onNext() {
             const tracks = this.playList.tracks;
-            const index = tracks.findIndex((track) => track.id === this.player.track.id);
+            const index = tracks.findIndex((track) => track.uri === this.player.track.uri);
             const newIndex = (((index + 1) % tracks.length) + tracks.length) % tracks.length;
             this.playList.activeTrack = newIndex;
             this.onPlay(tracks[newIndex]);
         }
         onPrev() {
             const tracks = this.playList.tracks;
-            const index = tracks.findIndex((track) => track.id === this.player.track.id);
+            const index = tracks.findIndex((track) => track.uri === this.player.track.uri);
             const newIndex = (((index + -1) % tracks.length) + tracks.length) % tracks.length;
             this.playList.activeTrack = newIndex;
             this.onPlay(tracks[newIndex]);
@@ -607,7 +641,6 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
             this.playList.togglePlay(this.player.isPlaying);
         }
         getConfigurators() {
-            const self = this;
             return [
                 {
                     name: 'Builder Configurator',
@@ -679,6 +712,7 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
                 }
             }
             this.updateTheme();
+            this.resizeLayout();
         }
         updateTag(type, value) {
             this.tag[type] = this.tag[type] ?? {};
@@ -708,6 +742,28 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
             this.updateStyle('--action-hover_background', this.tag[themeVar]?.hoverBackground);
             this.updateStyle('--action-hover', this.tag[themeVar]?.hover);
         }
+        resizeLayout() {
+            if (this.offsetWidth <= 0)
+                return;
+            const tagWidth = Number(this.tag?.width);
+            const hasSmallWidth = (this.offsetWidth !== 0 && this.offsetWidth < 550) || window.innerWidth < 550 || (!isNaN(tagWidth) && tagWidth !== 0 && tagWidth < 550);
+            if (hasSmallWidth) {
+                this.playlistEl.templateColumns = ['auto'];
+                this.playlistEl.templateAreas = [['player'], ['playlist']];
+                this.playerPanel.padding = { top: 0, bottom: 0, left: 0, right: 0 };
+                this.player.resizeLayout(true);
+            }
+            else {
+                this.playlistEl.templateColumns = ['repeat(2, 1fr)'];
+                this.playlistEl.templateAreas = [['playlist', 'player']];
+                this.playerPanel.padding = { top: '1rem', bottom: '1rem', left: '2.5rem', right: '2.5rem' };
+                this.player.resizeLayout(false);
+            }
+        }
+        refresh(skipRefreshControls) {
+            super.refresh(skipRefreshControls);
+            this.resizeLayout();
+        }
         init() {
             super.init();
             const url = this.getAttribute('url', true);
@@ -715,25 +771,19 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
                 this.setData({ url });
         }
         render() {
-            return (this.$render("i-hstack", { maxHeight: '100dvh', overflow: 'hidden', background: { color: Theme.background.main } },
+            return (this.$render("i-hstack", { maxHeight: '100dvh', height: "100%", overflow: 'hidden', background: { color: Theme.background.main } },
                 this.$render("i-video", { id: "videoEl", isStreaming: true, margin: { left: 'auto', right: 'auto' }, display: 'block', minWidth: '50%', url: "", stack: { grow: '1', shrink: '1' }, class: index_css_1.customVideoStyle, visible: false }),
-                this.$render("i-stack", { id: "playlistEl", direction: 'horizontal', justifyContent: 'center', position: 'relative', maxHeight: '100%', stack: { grow: '1', shrink: '1' }, visible: false, mediaQueries: [
+                this.$render("i-grid-layout", { id: "playlistEl", position: 'relative', maxHeight: '100%', stack: { grow: '1', shrink: '1' }, templateColumns: ['repeat(2, 1fr)'], mediaQueries: [
                         {
                             maxWidth: '767px',
                             properties: {
-                                direction: 'vertical',
-                                justifyContent: 'start'
+                                templateColumns: ['auto'],
+                                templateAreas: [['player'], ['playlist']]
                             }
                         }
                     ] },
-                    this.$render("i-panel", { mediaQueries: [
-                            {
-                                maxWidth: '767px',
-                                properties: { visible: false }
-                            }
-                        ] }),
-                    this.$render("i-scom-media-player--playlist", { id: "playList", stack: { shrink: '2', basis: '600px', grow: '1' }, display: 'block', padding: { left: '1rem', right: '1rem' }, height: '100%', overflow: { y: 'auto' }, onItemClicked: this.onPlay }),
-                    this.$render("i-panel", { padding: { top: '1rem', bottom: '1rem', left: '2.5rem', right: '2.5rem' }, stack: { shrink: '3', basis: '480px', grow: '0' }, width: '100%', mediaQueries: [
+                    this.$render("i-scom-media-player--playlist", { id: "playList", display: 'block', padding: { left: '1rem', right: '1rem' }, width: '100%', height: '100%', overflow: { y: 'auto' }, grid: { area: 'playlist' }, class: index_css_1.customScrollStyle, onItemClicked: this.onPlay }),
+                    this.$render("i-panel", { id: "playerPanel", padding: { top: '1rem', bottom: '1rem', left: '2.5rem', right: '2.5rem' }, width: '100%', height: '100%', grid: { area: 'player' }, mediaQueries: [
                             {
                                 maxWidth: '767px',
                                 properties: {
@@ -742,7 +792,9 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
                                 }
                             }
                         ] },
-                        this.$render("i-scom-media-player--player", { id: "player", display: 'block', width: '100%', height: '100%', background: { color: Theme.background.paper }, class: index_css_1.aspectRatioStyle, onNext: this.onNext, onPrev: this.onPrev, onStateChanged: this.onStateChanged })))));
+                        this.$render("i-scom-media-player--player", { id: "player", display: 'block', width: '100%', height: '100%', background: { color: Theme.background.paper }, 
+                            // class={aspectRatioStyle}
+                            onNext: this.onNext, onPrev: this.onPrev, onStateChanged: this.onStateChanged })))));
         }
     };
     ScomMediaPlayer = __decorate([

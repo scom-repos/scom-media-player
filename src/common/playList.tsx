@@ -8,7 +8,8 @@ import {
   Container,
   VStack,
   Control,
-  Icon
+  Icon,
+  Panel
 } from '@ijstech/components';
 import { ITrack } from '../inteface';
 const Theme = Styles.Theme.ThemeVars;
@@ -40,6 +41,7 @@ export class ScomMediaPlayerPlaylist extends Module {
   private pnlPlaylist: VStack;
   private lblTitle: Label;
   private imgPlaylist: Image;
+  private pnlHeader: Panel;
   private lblDesc: Label;
   private currentTrackEl: Control;
 
@@ -112,6 +114,7 @@ export class ScomMediaPlayerPlaylist extends Module {
     this.lblTitle.caption = this.title;
     this.lblDesc.caption = this.description;
     this.imgPlaylist.url = this.picture;
+    this.pnlHeader.visible = !!(this.title || this.description || this.picture);
   }
 
   private renderTracks() {
@@ -202,6 +205,7 @@ export class ScomMediaPlayerPlaylist extends Module {
     return (
       <i-vstack width={'100%'} gap="1rem">
         <i-hstack
+          id="pnlHeader"
           verticalAlignment='center' gap="0.5rem"
           background={{color: Theme.background.paper}}
           padding={{top: '0.75rem', bottom: '0.75rem', left: '1rem', right: '1rem'}}
@@ -225,14 +229,14 @@ export class ScomMediaPlayerPlaylist extends Module {
           padding={{top: '1rem', bottom: '1rem'}}
         >
           <i-panel hover={{opacity: 0.5}} cursor='pointer'>
-            <i-icon name="share-alt" width={'1.5rem'} height={'1.5rem'} fill={Theme.text.primary}></i-icon>
+            <i-icon name="share-alt" width={'1.25rem'} height={'1.25rem'} fill={Theme.text.primary}></i-icon>
           </i-panel>
           <i-panel hover={{opacity: 0.5}} cursor='pointer'>
-            <i-icon name="heart" width={'1.5rem'} height={'1.5rem'} fill={Theme.text.primary}></i-icon>
+            <i-icon name="heart" width={'1.25rem'} height={'1.25rem'} fill={Theme.text.primary}></i-icon>
           </i-panel>
         </i-hstack>
         <i-label caption='Tracks' font={{weight: 600, size: '1rem'}}></i-label>
-        <i-vstack id="pnlPlaylist" margin={{top: '0.75rem'}}></i-vstack>
+        <i-vstack id="pnlPlaylist" margin={{top: '0.75rem', bottom: '0.75rem'}}></i-vstack>
       </i-vstack>
     );
   }

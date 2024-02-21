@@ -45,6 +45,7 @@ export class ScomMediaPlayerPlayer extends Module {
   private player: any;
   private video: Video;
   private iconPlay: Icon;
+  private iconRepeat: Icon;
   private imgTrack: Image;
   private lblTrack: Label;
   private lblArtist: Label;
@@ -61,6 +62,8 @@ export class ScomMediaPlayerPlayer extends Module {
 
   private _data: IPlayer;
   private isMinimized: boolean = false;
+  private isRepeat: boolean = false;
+  private isProcessing: boolean = false;
 
   onNext: callbackType;
   onPrev: callbackType;
@@ -107,6 +110,17 @@ export class ScomMediaPlayerPlayer extends Module {
       })
       this.player.on('ended', () => {
         if (self.iconPlay) self.iconPlay.name = 'play-circle';
+        if (self.isRepeat) {
+          self.player.play();
+          self.iconPlay.name = 'pause-circle';
+          if (self.onStateChanged) self.onStateChanged();
+        } else {
+          if (!self.isProcessing) {
+            self.playNextTrack();
+            self.iconPlay.name = 'pause-circle';
+          }
+          self.isProcessing = true;
+        }
       })
       this.player.on('loadedmetadata', () => {
         self.updateDuration();
@@ -116,16 +130,17 @@ export class ScomMediaPlayerPlayer extends Module {
 
   playTrack(track: ITrack) {
     if (!this.player) return;
+    this.isProcessing = false;
     const self = this;
     if (this.track?.uri && this.track.uri === track.uri) {
       this.togglePlay();
     } else {
-      this.track = track;
       this.player.pause();
       const uri = track.uri.trim();
+      this.track = {...track};
       this.player.src({
         src: track.uri.startsWith('//') || track.uri.startsWith('http') ? uri : this.url + '/' + uri,
-        type: 'application/x-mpegURL'
+        type: self.getTrackType(track.uri)
       })
       this.player.ready(function() {
         self.renderTrack();
@@ -133,6 +148,10 @@ export class ScomMediaPlayerPlayer extends Module {
       });
       this.iconPlay.name = 'pause-circle';
     }
+  }
+
+  private getTrackType(url: string) {
+    return url.endsWith('.mp3') ? 'audio/mp3' : 'application/x-mpegURL';
   }
 
   private renderTrack() {
@@ -145,7 +164,7 @@ export class ScomMediaPlayerPlayer extends Module {
   private updateDuration() {
     const duration = (this.player?.duration() || 0) * 1000;
     this.lblEnd.caption = '00:00';
-    if (duration <= 0) return;
+    if (duration <= 0 || !Number.isFinite(duration)) return;
     this.pnlRange.clearInnerHTML();
     this.trackRange = <i-range
       min={0}
@@ -186,6 +205,11 @@ export class ScomMediaPlayerPlayer extends Module {
   }
 
   private onCollect() {}
+
+  private onRepeat() {
+    this.isRepeat = !this.isRepeat;
+    this.iconRepeat.fill = this.isRepeat ? Theme.colors.success.main : Theme.text.primary;
+  }
 
   private onExpand(target: Control, event: MouseEvent) {
     event.stopPropagation();
@@ -294,24 +318,6 @@ export class ScomMediaPlayerPlayer extends Module {
             font={{size: 'clamp(0.75rem, 0.7rem + 0.25vw, 1rem)'}}
           ></i-label>
         </i-vstack>
-        <i-panel
-          cursor='pointer'
-          hover={{opacity: 0.5}}
-          mediaQueries={[
-            {
-              maxWidth: '767px',
-              properties: {
-                visible: false
-              }
-            }
-          ]}
-        >
-          <i-icon
-            name='heart'
-            width={'1.25rem'} height={'1.25rem'}
-            fill={Theme.text.primary}
-          ></i-icon>
-        </i-panel>
       </i-hstack>
     )
     this.pnlTimeline = (
@@ -415,10 +421,15 @@ export class ScomMediaPlayerPlayer extends Module {
             ></i-icon>
           </i-vstack>
         </i-grid-layout>
-        <i-panel cursor='pointer' hover={{opacity: 0.5}}>
+        <i-panel
+          cursor='pointer'
+          hover={{opacity: 0.5}}
+          onClick={() => this.onRepeat()}
+        >
           <i-icon
+            id="iconRepeat"
             name="redo"
-            width={'1rem'} height={'1rem'}
+            width={'0.875rem'} height={'0.875rem'}
             fill={Theme.text.primary}
           ></i-icon>
         </i-panel>
@@ -442,7 +453,7 @@ export class ScomMediaPlayerPlayer extends Module {
         <i-panel cursor='pointer' hover={{opacity: 0.5}}>
           <i-icon
             name="music"
-            width={'1.25rem'} height={'1.25rem'}
+            width={'1rem'} height={'1rem'}
             fill={Theme.text.primary}
           ></i-icon>
         </i-panel>
@@ -455,7 +466,7 @@ export class ScomMediaPlayerPlayer extends Module {
           <i-panel cursor='pointer' hover={{opacity: 0.5}}>
             <i-icon
               name="exclamation-circle"
-              width={'1.25rem'} height={'1.25rem'}
+              width={'1rem'} height={'1rem'}
               fill={Theme.text.primary}
             ></i-icon>
           </i-panel>
@@ -466,8 +477,8 @@ export class ScomMediaPlayerPlayer extends Module {
         </i-hstack>
         <i-panel cursor='pointer' hover={{opacity: 0.5}}>
           <i-icon
-            name="share"
-            width={'1.25rem'} height={'1.25rem'}
+            name="share-alt"
+            width={'1rem'} height={'1rem'}
             fill={Theme.text.primary}
           ></i-icon>
         </i-panel>
@@ -476,6 +487,9 @@ export class ScomMediaPlayerPlayer extends Module {
     this.video = <i-video id="video" isStreaming={true} visible={false} url=""></i-video>
 
     this.playerGrid.append(this.imgTrack, this.video, this.pnlInfo, this.pnlControls, this.pnlTimeline, this.pnlFooter);
+  }
+
+  resizeLayout(mobile: boolean) {
   }
 
   init() {
