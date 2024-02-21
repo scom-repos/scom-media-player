@@ -38,6 +38,7 @@ declare module "@scom/scom-media-player/common/playList.tsx" {
         private pnlPlaylist;
         private lblTitle;
         private imgPlaylist;
+        private pnlHeader;
         private lblDesc;
         private currentTrackEl;
         private _data;
@@ -93,6 +94,7 @@ declare module "@scom/scom-media-player/common/player.tsx" {
         private player;
         private video;
         private iconPlay;
+        private iconRepeat;
         private imgTrack;
         private lblTrack;
         private lblArtist;
@@ -108,6 +110,8 @@ declare module "@scom/scom-media-player/common/player.tsx" {
         private playerGrid;
         private _data;
         private isMinimized;
+        private isRepeat;
+        private isProcessing;
         onNext: callbackType;
         onPrev: callbackType;
         onStateChanged: callbackType;
@@ -120,6 +124,7 @@ declare module "@scom/scom-media-player/common/player.tsx" {
         get isPlaying(): boolean;
         setData(data: IPlayer): Promise<void>;
         playTrack(track: ITrack): void;
+        private getTrackType;
         private renderTrack;
         private updateDuration;
         togglePlay(): void;
@@ -127,8 +132,10 @@ declare module "@scom/scom-media-player/common/player.tsx" {
         private playPrevTrack;
         private onPlay;
         private onCollect;
+        private onRepeat;
         private onExpand;
         private renderControls;
+        resizeLayout(mobile: boolean): void;
         init(): void;
         render(): any;
     }
@@ -142,6 +149,7 @@ declare module "@scom/scom-media-player/common/index.ts" {
 declare module "@scom/scom-media-player/index.css.ts" {
     export const aspectRatioStyle: string;
     export const customVideoStyle: string;
+    export const customScrollStyle: string;
 }
 /// <amd-module name="@scom/scom-media-player/utils.ts" />
 declare module "@scom/scom-media-player/utils.ts" {
@@ -166,6 +174,7 @@ declare module "@scom/scom-media-player" {
         private player;
         private videoEl;
         private playlistEl;
+        private playerPanel;
         private parser;
         tag: any;
         private _theme;
@@ -212,6 +221,8 @@ declare module "@scom/scom-media-player" {
         private updateTag;
         private updateStyle;
         private updateTheme;
+        private resizeLayout;
+        refresh(skipRefreshControls?: boolean): void;
         init(): void;
         render(): any;
     }
