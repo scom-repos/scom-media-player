@@ -150,12 +150,9 @@ declare module "@scom/scom-media-player/utils.ts" {
 }
 /// <amd-module name="@scom/scom-media-player" />
 declare module "@scom/scom-media-player" {
-    import { Module, Container, ControlElement } from '@ijstech/components';
+    import { Module, Container, ControlElement, IDataSchema } from '@ijstech/components';
     interface ScomMediaPlayerElement extends ControlElement {
         url?: string;
-    }
-    interface IMediaPlayer {
-        url: string;
     }
     global {
         namespace JSX {
@@ -178,8 +175,8 @@ declare module "@scom/scom-media-player" {
         static create(options?: ScomMediaPlayerElement, parent?: Container): Promise<ScomMediaPlayer>;
         get url(): string;
         set url(value: string);
-        setData(value: IMediaPlayer): Promise<void>;
-        getData(): IMediaPlayer;
+        private setData;
+        private getData;
         private loadLib;
         private renderUI;
         private checkParsedData;
@@ -190,8 +187,29 @@ declare module "@scom/scom-media-player" {
         private onNext;
         private onPrev;
         private onStateChanged;
+        getConfigurators(): {
+            name: string;
+            target: string;
+            getActions: () => {
+                name: string;
+                icon: string;
+                command: (builder: any, userInputData: any) => {
+                    execute: () => void;
+                    undo: () => void;
+                    redo: () => void;
+                };
+                userInputDataSchema: IDataSchema;
+            }[];
+            getData: any;
+            setData: any;
+            getTag: any;
+            setTag: any;
+        }[];
+        private getPropertiesSchema;
+        private _getActions;
+        private getTag;
+        private setTag;
         private updateTag;
-        setTag(value: any): void;
         private updateStyle;
         private updateTheme;
         init(): void;
