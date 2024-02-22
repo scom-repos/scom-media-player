@@ -188,7 +188,7 @@ export class ScomMediaPlayerPlaylist extends Module {
 
   togglePlay(value: boolean) {
     if (this.currentTrackEl) {
-      this.currentTrackEl.background.color = Theme.action.hoverBackground;
+      this.currentTrackEl.background.color = value ? Theme.action.activeBackground : Theme.action.hoverBackground;
       const icon = this.currentTrackEl.querySelector('i-icon') as Icon;
       if (icon) icon.name = value ? 'pause-circle' : 'angle-right';
     }

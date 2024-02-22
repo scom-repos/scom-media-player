@@ -21,7 +21,7 @@ export default class Module1 extends Module {
                 url={assets.fullPath('img/playlist.m3u8')}
                 // url="https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8"
                 display='block'
-                width={500} height={'100dvh'}
+                width={'100%'} height={'100dvh'}
             ></i-scom-media-player>
         </i-panel>
     }

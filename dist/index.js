@@ -109,7 +109,7 @@ define("@scom/scom-media-player/common/playList.tsx", ["require", "exports", "@i
         }
         togglePlay(value) {
             if (this.currentTrackEl) {
-                this.currentTrackEl.background.color = Theme.action.hoverBackground;
+                this.currentTrackEl.background.color = value ? Theme.action.activeBackground : Theme.action.hoverBackground;
                 const icon = this.currentTrackEl.querySelector('i-icon');
                 if (icon)
                     icon.name = value ? 'pause-circle' : 'angle-right';
@@ -153,7 +153,6 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
             super(parent, options);
             this.isMinimized = false;
             this.isRepeat = false;
-            this.isProcessing = false;
         }
         static async create(options, parent) {
             let self = new this(parent, options);
@@ -178,42 +177,35 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
         async setData(data) {
             this.isMinimized = false;
             this._data = { ...data };
-            this.player = await this.video.getPlayer();
+        }
+        onHide() {
             if (this.player) {
-                const self = this;
-                this.player.on('timeupdate', () => {
-                    const currentTime = self.player.currentTime() * 1000;
-                    if (self.trackRange)
-                        self.trackRange.value = currentTime;
-                    if (self.lblStart)
-                        self.lblStart.caption = (0, components_2.moment)(currentTime).format('mm:ss');
-                });
-                this.player.on('ended', () => {
-                    if (self.iconPlay)
-                        self.iconPlay.name = 'play-circle';
-                    if (self.isRepeat) {
-                        self.player.play();
-                        self.iconPlay.name = 'pause-circle';
-                        if (self.onStateChanged)
-                            self.onStateChanged();
-                    }
-                    else {
-                        if (!self.isProcessing) {
-                            self.playNextTrack();
-                            self.iconPlay.name = 'pause-circle';
-                        }
-                        self.isProcessing = true;
-                    }
-                });
-                this.player.on('loadedmetadata', () => {
-                    self.updateDuration();
-                });
+                this.player.off('timeupdate', this.timeUpdateHandler.bind(this));
+                this.player.off('loadedmetadata', this.updateDuration.bind(this));
+                this.player.off('ended', this.endedHandler.bind(this));
             }
+        }
+        endedHandler() {
+            this.iconPlay.name = 'play-circle';
+            if (this.isRepeat) {
+                this.player.play();
+                this.iconPlay.name = 'pause-circle';
+            }
+            else {
+                this.playNextTrack();
+                this.iconPlay.name = 'pause-circle';
+            }
+        }
+        timeUpdateHandler() {
+            const currentTime = this.player.currentTime() * 1000;
+            if (this.trackRange)
+                this.trackRange.value = currentTime;
+            if (this.lblStart)
+                this.lblStart.caption = (0, components_2.moment)(currentTime).format('mm:ss');
         }
         playTrack(track) {
             if (!this.player)
                 return;
-            this.isProcessing = false;
             const self = this;
             if (this.track?.uri && this.track.uri === track.uri) {
                 this.togglePlay();
@@ -284,6 +276,8 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
             this.isRepeat = !this.isRepeat;
             this.iconRepeat.fill = this.isRepeat ? Theme.colors.success.main : Theme.text.primary;
         }
+        onShuffle() {
+        }
         onExpand(target, event) {
             event.stopPropagation();
             if (!window.matchMedia('(max-width: 767px)').matches)
@@ -295,6 +289,7 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
                         properties: {
                             position: 'fixed',
                             bottom: '0.5rem',
+                            left: '0px',
                             zIndex: 9999,
                             maxHeight: '3.5rem'
                         }
@@ -304,17 +299,17 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
                         properties: {
                             padding: { left: '1rem', right: '1rem', top: '0.5rem', bottom: '0.5rem' },
                             gap: { row: '0px !important', column: '0.5rem !important' },
-                            templateColumns: ['2.5rem', 'repeat(2, 1fr)'],
+                            templateColumns: ['2.5rem', 'minmax(auto, calc(100% - 11.5rem))', '9rem'],
                             templateRows: ['1fr']
                         }
                     }];
                 this.pnlTimeline.mediaQueries = [{
                         maxWidth: '767px',
-                        properties: { visible: false }
+                        properties: { visible: false, maxWidth: '100%' }
                     }];
                 this.pnlFooter.mediaQueries = [{
                         maxWidth: '767px',
-                        properties: { visible: false }
+                        properties: { visible: false, maxWidth: '100%' }
                     }];
                 this.imgTrack.mediaQueries = [{
                         maxWidth: '767px',
@@ -322,6 +317,14 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
                             maxWidth: '2.5rem',
                             border: { radius: '50%' }
                         }
+                    }];
+                this.pnlRepeat.mediaQueries = [{
+                        maxWidth: '767px',
+                        properties: { visible: false, maxWidth: '100%' }
+                    }];
+                this.pnlRandom.mediaQueries = [{
+                        maxWidth: '767px',
+                        properties: { visible: false, maxWidth: '100%' }
                     }];
             }
             else {
@@ -331,6 +334,7 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
                         maxWidth: '767px',
                         properties: {
                             position: 'fixed',
+                            left: '0px',
                             bottom: '0px',
                             zIndex: 9999,
                             maxHeight: '100dvh'
@@ -340,6 +344,8 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
                 this.pnlTimeline.mediaQueries = [];
                 this.pnlFooter.mediaQueries = [];
                 this.imgTrack.mediaQueries = [];
+                this.pnlRepeat.mediaQueries = [];
+                this.pnlRandom.mediaQueries = [];
             }
         }
         renderControls() {
@@ -352,7 +358,7 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
                         }
                     }
                 ] }));
-            this.pnlInfo = (this.$render("i-hstack", { id: "pnlInfo", horizontalAlignment: 'space-between', verticalAlignment: 'center', margin: { top: '1rem', bottom: '1rem' }, width: '100%', mediaQueries: [
+            this.pnlInfo = (this.$render("i-hstack", { id: "pnlInfo", horizontalAlignment: 'space-between', verticalAlignment: 'center', margin: { top: '1rem', bottom: '1rem' }, width: '100%', overflow: 'hidden', mediaQueries: [
                     {
                         maxWidth: '767px',
                         properties: {
@@ -360,13 +366,13 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
                         }
                     }
                 ] },
-                this.$render("i-vstack", { gap: "0.25rem", verticalAlignment: 'center' },
+                this.$render("i-vstack", { gap: "0.25rem", verticalAlignment: 'center', maxWidth: '100%' },
                     this.$render("i-label", { id: "lblTrack", caption: '', font: { weight: 600, size: 'clamp(1rem, 0.95rem + 0.25vw, 1.25rem)' }, lineHeight: '1.375rem', maxWidth: '100%', textOverflow: 'ellipsis' }),
-                    this.$render("i-label", { id: "lblArtist", caption: '', font: { size: 'clamp(0.75rem, 0.7rem + 0.25vw, 1rem)' } }))));
+                    this.$render("i-label", { id: "lblArtist", caption: '', maxWidth: '100%', textOverflow: 'ellipsis', font: { size: 'clamp(0.75rem, 0.7rem + 0.25vw, 1rem)' } }))));
             this.pnlTimeline = (this.$render("i-vstack", { id: "pnlTimeline", width: '100%', mediaQueries: [
                     {
                         maxWidth: '767px',
-                        properties: { visible: false }
+                        properties: { visible: false, maxWidth: '100%' }
                     }
                 ] },
                 this.$render("i-panel", { id: "pnlRange", stack: { 'grow': '1', 'shrink': '1' } }),
@@ -381,7 +387,12 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
                         }
                     }
                 ] },
-                this.$render("i-panel", { cursor: 'pointer', hover: { opacity: 0.5 } },
+                this.$render("i-panel", { id: "pnlRandom", cursor: 'pointer', hover: { opacity: 0.5 }, mediaQueries: [
+                        {
+                            maxWidth: '767px',
+                            properties: { visible: false, maxWidth: '100%' }
+                        }
+                    ], onClick: () => this.onShuffle() },
                     this.$render("i-icon", { name: "random", width: '1rem', height: '1rem', fill: Theme.text.primary })),
                 this.$render("i-grid-layout", { verticalAlignment: "stretch", columnsPerRow: 3, height: '3rem', border: { radius: '0.25rem', width: '1px', style: 'solid', color: Theme.divider }, mediaQueries: [
                         {
@@ -397,12 +408,17 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
                         this.$render("i-icon", { id: "iconPlay", name: "play-circle", width: '1.75rem', height: '1.75rem', fill: Theme.text.primary })),
                     this.$render("i-vstack", { verticalAlignment: 'center', horizontalAlignment: 'center', cursor: 'pointer', hover: { opacity: 0.5 }, onClick: () => this.playNextTrack() },
                         this.$render("i-icon", { name: "step-forward", width: '1rem', height: '1rem', fill: Theme.text.primary }))),
-                this.$render("i-panel", { cursor: 'pointer', hover: { opacity: 0.5 }, onClick: () => this.onRepeat() },
+                this.$render("i-panel", { id: "pnlRepeat", cursor: 'pointer', hover: { opacity: 0.5 }, onClick: () => this.onRepeat(), mediaQueries: [
+                        {
+                            maxWidth: '767px',
+                            properties: { visible: false, maxWidth: '100%' }
+                        }
+                    ] },
                     this.$render("i-icon", { id: "iconRepeat", name: "redo", width: '0.875rem', height: '0.875rem', fill: Theme.text.primary }))));
             this.pnlFooter = (this.$render("i-hstack", { id: "pnlFooter", verticalAlignment: 'center', horizontalAlignment: 'space-between', gap: '1.25rem', width: '100%', margin: { top: '1rem' }, mediaQueries: [
                     {
                         maxWidth: '767px',
-                        properties: { visible: false }
+                        properties: { visible: false, maxWidth: '100%' }
                     }
                 ] },
                 this.$render("i-panel", { cursor: 'pointer', hover: { opacity: 0.5 } },
@@ -418,7 +434,7 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
         }
         resizeLayout(mobile) {
         }
-        init() {
+        async init() {
             super.init();
             this.onNext = this.getAttribute('onNext', true) || this.onNext;
             this.onPrev = this.getAttribute('onPrev', true) || this.onPrev;
@@ -427,6 +443,12 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
             const url = this.getAttribute('url', true);
             this.renderControls();
             this.setData({ track, url });
+            this.player = await this.video.getPlayer();
+            if (this.player) {
+                this.player.on('timeupdate', this.timeUpdateHandler.bind(this));
+                this.player.on('loadedmetadata', this.updateDuration.bind(this));
+                this.player.on('ended', this.endedHandler.bind(this));
+            }
         }
         render() {
             return (this.$render("i-panel", { id: "playerWrapper", width: "100%", height: '100%', background: { color: Theme.background.paper }, mediaQueries: [
@@ -435,6 +457,7 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
                         properties: {
                             position: 'fixed',
                             bottom: '0.5rem',
+                            left: '0px',
                             zIndex: 9999,
                             maxHeight: '3.5rem'
                         }
@@ -523,6 +546,7 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
             'm3u8-parser': 'm3u8-parser.min'
         }
     });
+    const MAX_WIDTH = 700;
     let ScomMediaPlayer = class ScomMediaPlayer extends components_4.Module {
         constructor(parent, options) {
             super(parent, options);
@@ -746,7 +770,7 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
             if (this.offsetWidth <= 0)
                 return;
             const tagWidth = Number(this.tag?.width);
-            const hasSmallWidth = (this.offsetWidth !== 0 && this.offsetWidth < 550) || window.innerWidth < 550 || (!isNaN(tagWidth) && tagWidth !== 0 && tagWidth < 550);
+            const hasSmallWidth = (this.offsetWidth !== 0 && this.offsetWidth < MAX_WIDTH) || window.innerWidth < MAX_WIDTH || (!isNaN(tagWidth) && tagWidth !== 0 && tagWidth < MAX_WIDTH);
             if (hasSmallWidth) {
                 this.playlistEl.templateColumns = ['auto'];
                 this.playlistEl.templateAreas = [['player'], ['playlist']];
@@ -790,11 +814,16 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
                                     padding: { top: 0, bottom: 0, left: 0, right: 0 },
                                     maxHeight: '0px'
                                 }
+                            },
+                            {
+                                minWidth: '768px',
+                                maxWidth: '900px',
+                                properties: {
+                                    padding: { top: '1rem', bottom: '1rem', left: '1rem', right: '1rem' }
+                                }
                             }
                         ] },
-                        this.$render("i-scom-media-player--player", { id: "player", display: 'block', width: '100%', height: '100%', background: { color: Theme.background.paper }, 
-                            // class={aspectRatioStyle}
-                            onNext: this.onNext, onPrev: this.onPrev, onStateChanged: this.onStateChanged })))));
+                        this.$render("i-scom-media-player--player", { id: "player", display: 'block', width: '100%', height: '100%', background: { color: Theme.background.paper }, onNext: this.onNext, onPrev: this.onPrev, onStateChanged: this.onStateChanged })))));
         }
     };
     ScomMediaPlayer = __decorate([
