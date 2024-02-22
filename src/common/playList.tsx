@@ -223,7 +223,7 @@ export class ScomMediaPlayerPlaylist extends Module {
             <i-label caption='' font={{size: '0.875rem', color: Theme.text.secondary}} id='lblDesc'></i-label>
           </i-vstack>
         </i-hstack>
-        <i-hstack
+        {/* <i-hstack
           verticalAlignment='center'
           gap="1rem"
           padding={{top: '1rem', bottom: '1rem'}}
@@ -234,9 +234,9 @@ export class ScomMediaPlayerPlaylist extends Module {
           <i-panel hover={{opacity: 0.5}} cursor='pointer'>
             <i-icon name="heart" width={'1.25rem'} height={'1.25rem'} fill={Theme.text.primary}></i-icon>
           </i-panel>
-        </i-hstack>
+        </i-hstack> */}
         <i-label caption='Tracks' font={{weight: 600, size: '1rem'}}></i-label>
-        <i-vstack id="pnlPlaylist" margin={{top: '0.75rem', bottom: '0.75rem'}}></i-vstack>
+        <i-vstack id="pnlPlaylist" margin={{ bottom: '0.75rem'}}></i-vstack>
       </i-vstack>
     );
   }
