@@ -7,14 +7,15 @@ import {
   Styles,
   Video,
   RequireJS,
-  Panel,
   IDataSchema,
-  LibPath,
-  application
+  application,
+  StackLayout,
+  Panel,
+  GridLayout
 } from '@ijstech/components'
 import { ScomMediaPlayerPlayer, ScomMediaPlayerPlaylist } from './common/index'
 import { ITrack } from './inteface'
-import { aspectRatioStyle, customVideoStyle } from './index.css'
+import { aspectRatioStyle, customScrollStyle, customVideoStyle } from './index.css'
 import { getPath, isStreaming } from './utils';
 
 const Theme = Styles.Theme.ThemeVars;
@@ -49,7 +50,8 @@ export default class ScomMediaPlayer extends Module {
   private playList: ScomMediaPlayerPlaylist;
   private player: ScomMediaPlayerPlayer;
   private videoEl: Video;
-  private playlistEl: Panel;
+  private playlistEl: GridLayout;
+  private playerPanel: Panel;
   private parser: any;
 
   tag: any = {
@@ -115,9 +117,9 @@ export default class ScomMediaPlayer extends Module {
     // TODO: check
     const playlists = this.parsedData.playlists || [];
     const segments = this.parsedData.segments || [];
-    const isStreamVideo = segments.length && segments.every(segment => /\.ts$/.test(segment.uri || ''));
+    const isStreamVideo = segments.every(segment => /\.ts$/.test(segment.uri || ''));
     const isVideo = playlists.some(playlist => playlist.attributes.RESOLUTION);
-    if ((playlists.length && !isVideo) || !isStreamVideo) {
+    if ((playlists.length && !isVideo) || (segments.length && !isStreamVideo)) {
       let value = [...playlists];
       const haveAudioGroup = !this.isEmptyObject(this.parsedData?.mediaGroups?.AUDIO);
       const isAudioOnly = playlists.length && playlists.every(playlist => !playlist.attributes.RESOLUTION);
@@ -161,7 +163,7 @@ export default class ScomMediaPlayer extends Module {
 
   private onNext() {
     const tracks = this.playList.tracks;
-    const index = tracks.findIndex((track: ITrack) => track.id === this.player.track.id);
+    const index = tracks.findIndex((track: ITrack) => track.uri === this.player.track.uri);
     const newIndex = (((index + 1) % tracks.length) + tracks.length) % tracks.length;
     this.playList.activeTrack = newIndex;
     this.onPlay(tracks[newIndex])
@@ -169,7 +171,7 @@ export default class ScomMediaPlayer extends Module {
 
   private onPrev() {
     const tracks = this.playList.tracks;
-    const index = tracks.findIndex((track: ITrack) => track.id === this.player.track.id);
+    const index = tracks.findIndex((track: ITrack) => track.uri === this.player.track.uri);
     const newIndex = (((index + -1) % tracks.length) + tracks.length) % tracks.length;
     this.playList.activeTrack = newIndex;
     this.onPlay(tracks[newIndex])
@@ -180,7 +182,6 @@ export default class ScomMediaPlayer extends Module {
   }
 
   getConfigurators() {
-    const self = this;
     return [
       {
         name: 'Builder Configurator',
@@ -253,6 +254,7 @@ export default class ScomMediaPlayer extends Module {
       }
     }
     this.updateTheme();
+    this.resizeLayout();
   }
 
   private updateTag(type: 'light' | 'dark', value: any) {
@@ -286,6 +288,30 @@ export default class ScomMediaPlayer extends Module {
     this.updateStyle('--action-hover', this.tag[themeVar]?.hover);
   }
 
+  private resizeLayout() {
+    if (this.offsetWidth <= 0) return;
+    const tagWidth = Number(this.tag?.width);
+    const hasSmallWidth = (this.offsetWidth !== 0 && this.offsetWidth < 550) || (window as any).innerWidth < 550 || (!isNaN(tagWidth) && tagWidth !== 0 && tagWidth < 550);
+    if (hasSmallWidth) {
+      this.playlistEl.templateColumns = ['auto'];
+      this.playlistEl.templateAreas = [['player'], ['playlist']];
+
+      this.playerPanel.padding = {top: 0, bottom: 0, left: 0, right: 0};
+      this.player.resizeLayout(true);
+    } else {
+      this.playlistEl.templateColumns = ['repeat(2, 1fr)'];
+      this.playlistEl.templateAreas = [['playlist', 'player']];
+
+      this.playerPanel.padding = {top: '1rem', bottom: '1rem', left: '2.5rem', right: '2.5rem'};
+      this.player.resizeLayout(false);
+    }
+  }
+
+  refresh(skipRefreshControls?: boolean): void {
+    super.refresh(skipRefreshControls);
+    this.resizeLayout();
+  }
+
   init() {
     super.init();
     const url = this.getAttribute('url', true);
@@ -296,6 +322,7 @@ export default class ScomMediaPlayer extends Module {
     return (
       <i-hstack
         maxHeight={'100dvh'}
+        height="100%"
         overflow={'hidden'}
         background={{color: Theme.background.main}}
       >
@@ -310,45 +337,37 @@ export default class ScomMediaPlayer extends Module {
           class={customVideoStyle}
           visible={false}
         ></i-video>
-        <i-stack
+        <i-grid-layout
           id="playlistEl"
-          direction='horizontal'
-          justifyContent='center'
           position='relative'
           maxHeight={'100%'}
           stack={{grow: '1', shrink: '1'}}
-          visible={false}
+          templateColumns={['repeat(2, 1fr)']}
           mediaQueries={[
             {
               maxWidth: '767px',
               properties: {
-                direction: 'vertical',
-                justifyContent: 'start'
+                templateColumns: ['auto'],
+                templateAreas: [['player'], ['playlist']]
               }
             }
           ]}
         >
-          <i-panel
-            mediaQueries={[
-              {
-                maxWidth: '767px',
-                properties: { visible: false }
-              }
-            ]}
-          />
           <i-scom-media-player--playlist
             id="playList"
-            stack={{shrink: '2', basis: '600px', grow: '1'}}
             display='block'
             padding={{left: '1rem', right: '1rem'}}
-            height={'100%'}
+            width={'100%'} height={'100%'}
             overflow={{y: 'auto'}}
+            grid={{area: 'playlist'}}
+            class={customScrollStyle}
             onItemClicked={this.onPlay}
           />
           <i-panel
+            id="playerPanel"
             padding={{top: '1rem', bottom: '1rem', left: '2.5rem', right: '2.5rem'}}
-            stack={{shrink: '3', basis: '480px', grow: '0'}}
-            width={'100%'}
+            width={'100%'} height={'100%'}
+            grid={{area: 'player'}}
             mediaQueries={[
               {
                 maxWidth: '767px',
@@ -364,13 +383,13 @@ export default class ScomMediaPlayer extends Module {
               display='block'
               width={'100%'} height={'100%'}
               background={{color: Theme.background.paper}}
-              class={aspectRatioStyle}
+              // class={aspectRatioStyle}
               onNext={this.onNext}
               onPrev={this.onPrev}
               onStateChanged={this.onStateChanged}
             />
           </i-panel>
-        </i-stack>
+        </i-grid-layout>
       </i-hstack>
     )
   }
