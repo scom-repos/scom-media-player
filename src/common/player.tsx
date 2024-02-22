@@ -58,12 +58,13 @@ export class ScomMediaPlayerPlayer extends Module {
   private pnlControls: Panel;
   private pnlTimeline: Panel;
   private pnlFooter: Panel;
+  private pnlRandom: Panel;
+  private pnlRepeat: Panel;
   private playerGrid: GridLayout;
 
   private _data: IPlayer;
   private isMinimized: boolean = false;
   private isRepeat: boolean = false;
-  private isProcessing: boolean = false;
 
   onNext: callbackType;
   onPrev: callbackType;
@@ -100,37 +101,35 @@ export class ScomMediaPlayerPlayer extends Module {
   async setData(data: IPlayer) {
     this.isMinimized = false;
     this._data = {...data};
-    this.player = await this.video.getPlayer();
+  }
+
+  onHide(): void {
     if (this.player) {
-      const self = this;
-      this.player.on('timeupdate', () => {
-        const currentTime = self.player.currentTime() * 1000;
-        if (self.trackRange) self.trackRange.value = currentTime;
-        if (self.lblStart) self.lblStart.caption = moment(currentTime).format('mm:ss');
-      })
-      this.player.on('ended', () => {
-        if (self.iconPlay) self.iconPlay.name = 'play-circle';
-        if (self.isRepeat) {
-          self.player.play();
-          self.iconPlay.name = 'pause-circle';
-          if (self.onStateChanged) self.onStateChanged();
-        } else {
-          if (!self.isProcessing) {
-            self.playNextTrack();
-            self.iconPlay.name = 'pause-circle';
-          }
-          self.isProcessing = true;
-        }
-      })
-      this.player.on('loadedmetadata', () => {
-        self.updateDuration();
-      })
+      this.player.off('timeupdate', this.timeUpdateHandler.bind(this));
+      this.player.off('loadedmetadata', this.updateDuration.bind(this));
+      this.player.off('ended', this.endedHandler.bind(this));
     }
+  }
+
+  private endedHandler() {
+    this.iconPlay.name = 'play-circle';
+    if (this.isRepeat) {
+      this.player.play();
+      this.iconPlay.name = 'pause-circle';
+    } else {
+      this.playNextTrack();
+      this.iconPlay.name = 'pause-circle';
+    }
+  }
+
+  private timeUpdateHandler() {
+    const currentTime = this.player.currentTime() * 1000;
+    if (this.trackRange) this.trackRange.value = currentTime;
+    if (this.lblStart) this.lblStart.caption = moment(currentTime).format('mm:ss');
   }
 
   playTrack(track: ITrack) {
     if (!this.player) return;
-    this.isProcessing = false;
     const self = this;
     if (this.track?.uri && this.track.uri === track.uri) {
       this.togglePlay();
@@ -181,7 +180,7 @@ export class ScomMediaPlayerPlayer extends Module {
     this.lblEnd.caption = moment(duration).format('mm:ss');
   }
 
-  togglePlay() {
+  private togglePlay() {
     if (this.player.paused()) {
       this.player.play();
       this.iconPlay.name = 'pause-circle';
@@ -211,6 +210,9 @@ export class ScomMediaPlayerPlayer extends Module {
     this.iconRepeat.fill = this.isRepeat ? Theme.colors.success.main : Theme.text.primary;
   }
 
+  private onShuffle() {
+  }
+
   private onExpand(target: Control, event: MouseEvent) {
     event.stopPropagation();
     if (!window.matchMedia('(max-width: 767px)').matches) return;
@@ -221,6 +223,7 @@ export class ScomMediaPlayerPlayer extends Module {
         properties: {
           position: 'fixed',
           bottom: '0.5rem',
+          left: '0px',
           zIndex: 9999,
           maxHeight: '3.5rem'
         }
@@ -230,17 +233,17 @@ export class ScomMediaPlayerPlayer extends Module {
         properties: {
           padding: {left: '1rem', right: '1rem', top: '0.5rem', bottom: '0.5rem'},
           gap: {row: '0px !important', column: '0.5rem !important'},
-          templateColumns: ['2.5rem', 'repeat(2, 1fr)'],
+          templateColumns: ['2.5rem', 'minmax(auto, calc(100% - 11.5rem))', '9rem'],
           templateRows: ['1fr']
         }
       }];
       this.pnlTimeline.mediaQueries = [{
         maxWidth: '767px',
-        properties: {visible: false}
+        properties: {visible: false, maxWidth: '100%'}
       }];
       this.pnlFooter.mediaQueries = [{
         maxWidth: '767px',
-        properties: {visible: false}
+        properties: {visible: false, maxWidth: '100%'}
       }];
       this.imgTrack.mediaQueries = [ {
         maxWidth: '767px',
@@ -249,6 +252,14 @@ export class ScomMediaPlayerPlayer extends Module {
           border: {radius: '50%'}
         }
       }];
+      this.pnlRepeat.mediaQueries = [{
+        maxWidth: '767px',
+        properties: {visible: false, maxWidth: '100%'}
+      }];
+      this.pnlRandom.mediaQueries = [{
+        maxWidth: '767px',
+        properties: {visible: false, maxWidth: '100%'}
+      }];
     } else {
       this.playerGrid.mediaQueries = [];
       this.playerWrapper.mediaQueries = [
@@ -256,6 +267,7 @@ export class ScomMediaPlayerPlayer extends Module {
           maxWidth: '767px',
           properties: {
             position: 'fixed',
+            left: '0px',
             bottom: '0px',
             zIndex: 9999,
             maxHeight: '100dvh'
@@ -265,6 +277,8 @@ export class ScomMediaPlayerPlayer extends Module {
       this.pnlTimeline.mediaQueries = [];
       this.pnlFooter.mediaQueries = [];
       this.imgTrack.mediaQueries = [];
+      this.pnlRepeat.mediaQueries = [];
+      this.pnlRandom.mediaQueries = [];
     }
   }
 
@@ -294,6 +308,7 @@ export class ScomMediaPlayerPlayer extends Module {
         verticalAlignment='center'
         margin={{top: '1rem', bottom: '1rem'}}
         width={'100%'}
+        overflow={'hidden'}
         mediaQueries={[
           {
             maxWidth: '767px',
@@ -303,7 +318,7 @@ export class ScomMediaPlayerPlayer extends Module {
           }
         ]}
       >
-        <i-vstack gap="0.25rem" verticalAlignment='center'>
+        <i-vstack gap="0.25rem" verticalAlignment='center' maxWidth={'100%'}>
           <i-label
             id="lblTrack"
             caption=''
@@ -315,6 +330,8 @@ export class ScomMediaPlayerPlayer extends Module {
           <i-label
             id="lblArtist"
             caption=''
+            maxWidth={'100%'}
+            textOverflow='ellipsis'
             font={{size: 'clamp(0.75rem, 0.7rem + 0.25vw, 1rem)'}}
           ></i-label>
         </i-vstack>
@@ -327,7 +344,7 @@ export class ScomMediaPlayerPlayer extends Module {
         mediaQueries={[
           {
             maxWidth: '767px',
-            properties: {visible: false}
+            properties: {visible: false, maxWidth: '100%'}
           }
         ]}
       >
@@ -357,7 +374,18 @@ export class ScomMediaPlayerPlayer extends Module {
           }
         ]}
       >
-        <i-panel cursor='pointer' hover={{opacity: 0.5}}>
+        <i-panel
+          id="pnlRandom"
+          cursor='pointer'
+          hover={{opacity: 0.5}}
+          mediaQueries={[
+            {
+              maxWidth: '767px',
+              properties: {visible: false, maxWidth: '100%'}
+            }
+          ]}
+          onClick={() => this.onShuffle()}
+        >
           <i-icon
             name="random"
             width={'1rem'}
@@ -422,9 +450,16 @@ export class ScomMediaPlayerPlayer extends Module {
           </i-vstack>
         </i-grid-layout>
         <i-panel
+          id="pnlRepeat"
           cursor='pointer'
           hover={{opacity: 0.5}}
           onClick={() => this.onRepeat()}
+          mediaQueries={[
+            {
+              maxWidth: '767px',
+              properties: {visible: false, maxWidth: '100%'}
+            }
+          ]}
         >
           <i-icon
             id="iconRepeat"
@@ -446,7 +481,7 @@ export class ScomMediaPlayerPlayer extends Module {
         mediaQueries={[
           {
             maxWidth: '767px',
-            properties: {visible: false}
+            properties: {visible: false, maxWidth: '100%'}
           }
         ]}
       >
@@ -492,7 +527,7 @@ export class ScomMediaPlayerPlayer extends Module {
   resizeLayout(mobile: boolean) {
   }
 
-  init() {
+ async init() {
     super.init();
     this.onNext = this.getAttribute('onNext', true) || this.onNext;
     this.onPrev = this.getAttribute('onPrev', true) || this.onPrev;
@@ -501,6 +536,12 @@ export class ScomMediaPlayerPlayer extends Module {
     const url = this.getAttribute('url', true);
     this.renderControls();
     this.setData({ track, url });
+    this.player = await this.video.getPlayer();
+    if (this.player) {
+      this.player.on('timeupdate', this.timeUpdateHandler.bind(this));
+      this.player.on('loadedmetadata', this.updateDuration.bind(this));
+      this.player.on('ended', this.endedHandler.bind(this));
+    }
   }
 
   render() {
@@ -515,6 +556,7 @@ export class ScomMediaPlayerPlayer extends Module {
             properties: {
               position: 'fixed',
               bottom: '0.5rem',
+              left: '0px',
               zIndex: 9999,
               maxHeight: '3.5rem'
             }
