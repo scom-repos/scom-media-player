@@ -158,6 +158,7 @@ export default class ScomMediaPlayer extends Module {
 
   private onPlay(data: ITrack) {
     if (!data) return;
+    this.player.visible = true;
     this.player.playTrack(data);
   }
 
@@ -343,6 +344,7 @@ export default class ScomMediaPlayer extends Module {
           maxHeight={'100%'}
           stack={{grow: '1', shrink: '1'}}
           templateColumns={['repeat(2, 1fr)']}
+          gap={{column: '0px', row: '0.75rem'}}
           mediaQueries={[
             {
               maxWidth: '767px',
@@ -372,8 +374,7 @@ export default class ScomMediaPlayer extends Module {
               {
                 maxWidth: '767px',
                 properties: {
-                  padding: {top: 0, bottom: 0, left: 0, right: 0},
-                  maxHeight: '0px'
+                  padding: {top: 0, bottom: 0, left: 0, right: 0}
                 }
               },
               {
@@ -390,6 +391,7 @@ export default class ScomMediaPlayer extends Module {
               display='block'
               width={'100%'} height={'100%'}
               background={{color: Theme.background.paper}}
+              visible={false}
               onNext={this.onNext}
               onPrev={this.onPrev}
               onStateChanged={this.onStateChanged}
