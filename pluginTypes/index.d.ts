@@ -67,6 +67,10 @@ declare module "@scom/scom-media-player/common/playList.tsx" {
         render(): any;
     }
 }
+/// <amd-module name="@scom/scom-media-player/common/index.css.ts" />
+declare module "@scom/scom-media-player/common/index.css.ts" {
+    export const customRangeStyle: string;
+}
 /// <amd-module name="@scom/scom-media-player/common/player.tsx" />
 declare module "@scom/scom-media-player/common/player.tsx" {
     import { ControlElement, Module, Container } from '@ijstech/components';
@@ -106,7 +110,6 @@ declare module "@scom/scom-media-player/common/player.tsx" {
         private pnlInfo;
         private pnlControls;
         private pnlTimeline;
-        private pnlFooter;
         private pnlRandom;
         private pnlRepeat;
         private playerGrid;
@@ -123,22 +126,23 @@ declare module "@scom/scom-media-player/common/player.tsx" {
         get url(): string;
         set url(value: string);
         get isPlaying(): boolean;
-        setData(data: IPlayer): Promise<void>;
-        onHide(): void;
+        setData(data: IPlayer): void;
         private endedHandler;
         private timeUpdateHandler;
         playTrack(track: ITrack): void;
+        private playHandler;
+        private updateMetadata;
+        private updatePositionState;
         private getTrackType;
+        private getTrackSrc;
         private renderTrack;
         private updateDuration;
         private togglePlay;
         private playNextTrack;
         private playPrevTrack;
         private onPlay;
-        private onCollect;
         private onRepeat;
         private onShuffle;
-        private onExpand;
         private renderControls;
         resizeLayout(mobile: boolean): void;
         init(): Promise<void>;
@@ -152,7 +156,6 @@ declare module "@scom/scom-media-player/common/index.ts" {
 }
 /// <amd-module name="@scom/scom-media-player/index.css.ts" />
 declare module "@scom/scom-media-player/index.css.ts" {
-    export const aspectRatioStyle: string;
     export const customVideoStyle: string;
     export const customScrollStyle: string;
 }
