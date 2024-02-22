@@ -9,13 +9,12 @@ import {
   RequireJS,
   IDataSchema,
   application,
-  StackLayout,
   Panel,
   GridLayout
 } from '@ijstech/components'
 import { ScomMediaPlayerPlayer, ScomMediaPlayerPlaylist } from './common/index'
 import { ITrack } from './inteface'
-import { aspectRatioStyle, customScrollStyle, customVideoStyle } from './index.css'
+import { customScrollStyle, customVideoStyle } from './index.css'
 import { getPath, isStreaming } from './utils';
 
 const Theme = Styles.Theme.ThemeVars;
@@ -35,6 +34,7 @@ RequireJS.config({
     'm3u8-parser': 'm3u8-parser.min'
   }
 })
+const MAX_WIDTH = 700;
 
 declare global {
   namespace JSX {
@@ -291,7 +291,7 @@ export default class ScomMediaPlayer extends Module {
   private resizeLayout() {
     if (this.offsetWidth <= 0) return;
     const tagWidth = Number(this.tag?.width);
-    const hasSmallWidth = (this.offsetWidth !== 0 && this.offsetWidth < 550) || (window as any).innerWidth < 550 || (!isNaN(tagWidth) && tagWidth !== 0 && tagWidth < 550);
+    const hasSmallWidth = (this.offsetWidth !== 0 && this.offsetWidth < MAX_WIDTH) || (window as any).innerWidth < MAX_WIDTH || (!isNaN(tagWidth) && tagWidth !== 0 && tagWidth < MAX_WIDTH);
     if (hasSmallWidth) {
       this.playlistEl.templateColumns = ['auto'];
       this.playlistEl.templateAreas = [['player'], ['playlist']];
@@ -375,6 +375,13 @@ export default class ScomMediaPlayer extends Module {
                   padding: {top: 0, bottom: 0, left: 0, right: 0},
                   maxHeight: '0px'
                 }
+              },
+              {
+                minWidth: '768px',
+                maxWidth: '900px',
+                properties: {
+                  padding: {top: '1rem', bottom: '1rem', left: '1rem', right: '1rem'}
+                }
               }
             ]}
           >
@@ -383,7 +390,6 @@ export default class ScomMediaPlayer extends Module {
               display='block'
               width={'100%'} height={'100%'}
               background={{color: Theme.background.paper}}
-              // class={aspectRatioStyle}
               onNext={this.onNext}
               onPrev={this.onPrev}
               onStateChanged={this.onStateChanged}

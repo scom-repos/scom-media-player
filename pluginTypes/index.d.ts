@@ -107,11 +107,12 @@ declare module "@scom/scom-media-player/common/player.tsx" {
         private pnlControls;
         private pnlTimeline;
         private pnlFooter;
+        private pnlRandom;
+        private pnlRepeat;
         private playerGrid;
         private _data;
         private isMinimized;
         private isRepeat;
-        private isProcessing;
         onNext: callbackType;
         onPrev: callbackType;
         onStateChanged: callbackType;
@@ -123,20 +124,24 @@ declare module "@scom/scom-media-player/common/player.tsx" {
         set url(value: string);
         get isPlaying(): boolean;
         setData(data: IPlayer): Promise<void>;
+        onHide(): void;
+        private endedHandler;
+        private timeUpdateHandler;
         playTrack(track: ITrack): void;
         private getTrackType;
         private renderTrack;
         private updateDuration;
-        togglePlay(): void;
+        private togglePlay;
         private playNextTrack;
         private playPrevTrack;
         private onPlay;
         private onCollect;
         private onRepeat;
+        private onShuffle;
         private onExpand;
         private renderControls;
         resizeLayout(mobile: boolean): void;
-        init(): void;
+        init(): Promise<void>;
         render(): any;
     }
 }
