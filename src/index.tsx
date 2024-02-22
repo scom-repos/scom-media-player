@@ -100,6 +100,14 @@ export default class ScomMediaPlayer extends Module {
     if (!this.url || !isStreaming(this.url)) return;
     if (!this.parser) {
       this.parser = await this.loadLib();
+      this.parser.addParser({
+        expression: /#EXTIMG/,
+        customType: 'poster',
+        dataParser: function(line: string) {
+          return line.replace('#EXTIMG:', '').trim()
+        },
+        segment: true
+      });
     }
     const result = await fetch(this.url);
     const manifest = await result.text();
@@ -126,7 +134,7 @@ export default class ScomMediaPlayer extends Module {
       if (isAudioOnly && haveAudioGroup) {
         value = [{ uri: this.url, title: '' }];
       } else if (!isStreamVideo) {
-        value = [...segments];
+        value = [...segments].map(segment => ({ ...segment, poster: segment?.custom?.poster || '' }));
       }
       this.renderPlaylist(value);
     } else {

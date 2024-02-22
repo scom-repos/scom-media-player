@@ -372,111 +372,6 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
         //     this.pnlRandom.mediaQueries = [];
         //   }
         // }
-        renderControls() {
-            this.imgTrack = (this.$render("i-image", { id: "imgTrack", width: '13rem', height: 'auto', minHeight: '6.25rem', margin: { left: 'auto', right: 'auto' }, display: 'block', background: { color: Theme.background.default } }));
-            this.pnlInfo = (this.$render("i-hstack", { id: "pnlInfo", horizontalAlignment: 'space-between', verticalAlignment: 'center', margin: { top: '1rem', bottom: '1rem' }, width: '100%', overflow: 'hidden', mediaQueries: [
-                    {
-                        maxWidth: '767px',
-                        properties: {
-                            margin: { top: 0, bottom: 0 }
-                        }
-                    }
-                ] },
-                this.$render("i-vstack", { gap: "0.25rem", verticalAlignment: 'center', maxWidth: '100%' },
-                    this.$render("i-label", { id: "lblTrack", caption: '', font: { weight: 600, size: 'clamp(1rem, 0.95rem + 0.25vw, 1.25rem)' }, lineHeight: '1.375rem', maxWidth: '100%', textOverflow: 'ellipsis' }),
-                    this.$render("i-label", { id: "lblArtist", caption: '', maxWidth: '100%', textOverflow: 'ellipsis', font: { size: 'clamp(0.75rem, 0.7rem + 0.25vw, 1rem)' } }))));
-            this.pnlTimeline = (this.$render("i-vstack", { id: "pnlTimeline", width: '100%' },
-                this.$render("i-panel", { id: "pnlRange", stack: { 'grow': '1', 'shrink': '1' } }),
-                this.$render("i-hstack", { horizontalAlignment: 'space-between', gap: "0.25rem" },
-                    this.$render("i-label", { id: "lblStart", caption: '0:00', font: { size: '0.875rem' } }),
-                    this.$render("i-label", { id: 'lblEnd', caption: '0:00', font: { size: '0.875rem' } }))));
-            this.pnlControls = (this.$render("i-hstack", { id: "pnlControls", verticalAlignment: 'center', horizontalAlignment: 'space-between', gap: '1.25rem', width: '100%', mediaQueries: [
-                    {
-                        maxWidth: '767px',
-                        properties: {
-                            gap: '0.5rem'
-                        }
-                    }
-                ] },
-                this.$render("i-panel", { id: "pnlRandom", cursor: 'pointer', hover: { opacity: 0.5 }, 
-                    // mediaQueries={[
-                    //   {
-                    //     maxWidth: '767px',
-                    //     properties: {visible: false, maxWidth: '100%'}
-                    //   }
-                    // ]}
-                    onClick: () => this.onShuffle() },
-                    this.$render("i-icon", { name: "random", width: '1rem', height: '1rem', fill: Theme.text.primary })),
-                this.$render("i-grid-layout", { verticalAlignment: "stretch", columnsPerRow: 3, height: '2.5rem', border: { radius: '0.25rem', width: '1px', style: 'solid', color: Theme.divider }, 
-                    // mediaQueries={[
-                    //   {
-                    //     maxWidth: '767px',
-                    //     properties: {
-                    //       border: {radius: '0px', width: '1px', style: 'none', color: Theme.divider}
-                    //     }
-                    //   }
-                    // ]}
-                    stack: { grow: '1', shrink: '1' } },
-                    this.$render("i-vstack", { verticalAlignment: 'center', horizontalAlignment: 'center', cursor: 'pointer', hover: { opacity: 0.5 }, onClick: () => this.playPrevTrack() },
-                        this.$render("i-icon", { name: "step-backward", width: '1rem', height: '1rem', fill: Theme.text.primary })),
-                    this.$render("i-vstack", { verticalAlignment: 'center', horizontalAlignment: 'center', cursor: 'pointer', hover: { opacity: 0.5 }, onClick: () => this.onPlay() },
-                        this.$render("i-icon", { id: "iconPlay", name: "play-circle", width: '1.75rem', height: '1.75rem', fill: Theme.text.primary })),
-                    this.$render("i-vstack", { verticalAlignment: 'center', horizontalAlignment: 'center', cursor: 'pointer', hover: { opacity: 0.5 }, onClick: () => this.playNextTrack() },
-                        this.$render("i-icon", { name: "step-forward", width: '1rem', height: '1rem', fill: Theme.text.primary }))),
-                this.$render("i-panel", { id: "pnlRepeat", cursor: 'pointer', hover: { opacity: 0.5 }, onClick: () => this.onRepeat() },
-                    this.$render("i-icon", { id: "iconRepeat", name: "redo", width: '0.875rem', height: '0.875rem', fill: Theme.text.primary }))));
-            // this.pnlFooter = (
-            //   <i-hstack
-            //     id="pnlFooter"
-            //     verticalAlignment='center'
-            //     horizontalAlignment='space-between'
-            //     gap={'1.25rem'}
-            //     width={'100%'}
-            //     margin={{top: '1rem'}}
-            //     mediaQueries={[
-            //       {
-            //         maxWidth: '767px',
-            //         properties: {visible: false, maxWidth: '100%'}
-            //       }
-            //     ]}
-            //   >
-            //     <i-panel cursor='pointer' hover={{opacity: 0.5}}>
-            //       <i-icon
-            //         name="music"
-            //         width={'1rem'} height={'1rem'}
-            //         fill={Theme.text.primary}
-            //       ></i-icon>
-            //     </i-panel>
-            //     <i-hstack
-            //       verticalAlignment="center"
-            //       gap="0.25rem"
-            //       cursor='pointer'
-            //       onClick={this.onCollect}
-            //     >
-            //       <i-panel cursor='pointer' hover={{opacity: 0.5}}>
-            //         <i-icon
-            //           name="exclamation-circle"
-            //           width={'1rem'} height={'1rem'}
-            //           fill={Theme.text.primary}
-            //         ></i-icon>
-            //       </i-panel>
-            //       <i-label
-            //         caption='Collect'
-            //         font={{size: '0.875rem', weight: 600}}
-            //       ></i-label>
-            //     </i-hstack>
-            //     <i-panel cursor='pointer' hover={{opacity: 0.5}}>
-            //       <i-icon
-            //         name="share-alt"
-            //         width={'1rem'} height={'1rem'}
-            //         fill={Theme.text.primary}
-            //       ></i-icon>
-            //     </i-panel>
-            //   </i-hstack>
-            // )
-            this.video = this.$render("i-video", { id: "video", isStreaming: true, visible: false, url: "" });
-            this.playerGrid.append(this.imgTrack, this.video, this.pnlInfo, this.pnlControls, this.pnlTimeline);
-        }
         resizeLayout(mobile) {
         }
         async init() {
@@ -486,7 +381,6 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
             this.onStateChanged = this.getAttribute('onStateChanged', true) || this.onStateChanged;
             const track = this.getAttribute('track', true);
             const url = this.getAttribute('url', true);
-            this.renderControls();
             this.player = await this.video.getPlayer();
             if (this.player) {
                 this.player.on('timeupdate', this.timeUpdateHandler);
@@ -497,7 +391,60 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
         }
         render() {
             return (this.$render("i-panel", { id: "playerWrapper", width: "100%", height: '100%', background: { color: Theme.background.paper } },
-                this.$render("i-grid-layout", { id: "playerGrid", gap: { row: '1rem', column: '0px' }, width: "100%", height: '100%', padding: { top: '1rem', bottom: '1rem', left: '1rem', right: '1rem' }, templateRows: ['auto'], templateColumns: ['1fr'], verticalAlignment: 'center' })));
+                this.$render("i-grid-layout", { id: "playerGrid", gap: { row: '1rem', column: '0px' }, width: "100%", height: '100%', padding: { top: '1rem', bottom: '1rem', left: '1rem', right: '1rem' }, templateRows: ['auto'], templateColumns: ['1fr'], verticalAlignment: 'center' },
+                    this.$render("i-image", { id: "imgTrack", width: '13rem', height: 'auto', minHeight: '6.25rem', margin: { left: 'auto', right: 'auto' }, display: 'block', background: { color: Theme.background.default } }),
+                    this.$render("i-video", { id: "video", isStreaming: true, visible: false, url: "" }),
+                    this.$render("i-hstack", { id: "pnlInfo", horizontalAlignment: 'space-between', verticalAlignment: 'center', margin: { top: '1rem', bottom: '1rem' }, width: '100%', overflow: 'hidden', mediaQueries: [
+                            {
+                                maxWidth: '767px',
+                                properties: {
+                                    margin: { top: 0, bottom: 0 }
+                                }
+                            }
+                        ] },
+                        this.$render("i-vstack", { gap: "0.25rem", verticalAlignment: 'center', maxWidth: '100%' },
+                            this.$render("i-label", { id: "lblTrack", caption: '', font: { weight: 600, size: 'clamp(1rem, 0.95rem + 0.25vw, 1.25rem)' }, lineHeight: '1.375rem', maxWidth: '100%', textOverflow: 'ellipsis' }),
+                            this.$render("i-label", { id: "lblArtist", caption: '', maxWidth: '100%', textOverflow: 'ellipsis', font: { size: 'clamp(0.75rem, 0.7rem + 0.25vw, 1rem)' } }))),
+                    this.$render("i-vstack", { id: "pnlTimeline", width: '100%' },
+                        this.$render("i-panel", { id: "pnlRange", stack: { 'grow': '1', 'shrink': '1' } }),
+                        this.$render("i-hstack", { horizontalAlignment: 'space-between', gap: "0.25rem" },
+                            this.$render("i-label", { id: "lblStart", caption: '0:00', font: { size: '0.875rem' } }),
+                            this.$render("i-label", { id: 'lblEnd', caption: '0:00', font: { size: '0.875rem' } }))),
+                    this.$render("i-hstack", { id: "pnlControls", verticalAlignment: 'center', horizontalAlignment: 'space-between', gap: '1.25rem', width: '100%', mediaQueries: [
+                            {
+                                maxWidth: '767px',
+                                properties: {
+                                    gap: '0.5rem'
+                                }
+                            }
+                        ] },
+                        this.$render("i-panel", { id: "pnlRandom", cursor: 'pointer', hover: { opacity: 0.5 }, 
+                            // mediaQueries={[
+                            //   {
+                            //     maxWidth: '767px',
+                            //     properties: {visible: false, maxWidth: '100%'}
+                            //   }
+                            // ]}
+                            onClick: () => this.onShuffle() },
+                            this.$render("i-icon", { name: "random", width: '1rem', height: '1rem', fill: Theme.text.primary })),
+                        this.$render("i-grid-layout", { verticalAlignment: "stretch", columnsPerRow: 3, height: '2.5rem', border: { radius: '0.25rem', width: '1px', style: 'solid', color: Theme.divider }, 
+                            // mediaQueries={[
+                            //   {
+                            //     maxWidth: '767px',
+                            //     properties: {
+                            //       border: {radius: '0px', width: '1px', style: 'none', color: Theme.divider}
+                            //     }
+                            //   }
+                            // ]}
+                            stack: { grow: '1', shrink: '1' } },
+                            this.$render("i-vstack", { verticalAlignment: 'center', horizontalAlignment: 'center', cursor: 'pointer', hover: { opacity: 0.5 }, onClick: () => this.playPrevTrack() },
+                                this.$render("i-icon", { name: "step-backward", width: '1rem', height: '1rem', fill: Theme.text.primary })),
+                            this.$render("i-vstack", { verticalAlignment: 'center', horizontalAlignment: 'center', cursor: 'pointer', hover: { opacity: 0.5 }, onClick: () => this.onPlay() },
+                                this.$render("i-icon", { id: "iconPlay", name: "play-circle", width: '1.75rem', height: '1.75rem', fill: Theme.text.primary })),
+                            this.$render("i-vstack", { verticalAlignment: 'center', horizontalAlignment: 'center', cursor: 'pointer', hover: { opacity: 0.5 }, onClick: () => this.playNextTrack() },
+                                this.$render("i-icon", { name: "step-forward", width: '1rem', height: '1rem', fill: Theme.text.primary }))),
+                        this.$render("i-panel", { id: "pnlRepeat", cursor: 'pointer', hover: { opacity: 0.5 }, onClick: () => this.onRepeat() },
+                            this.$render("i-icon", { id: "iconRepeat", name: "redo", width: '0.875rem', height: '0.875rem', fill: Theme.text.primary }))))));
         }
     };
     ScomMediaPlayerPlayer = __decorate([
@@ -609,6 +556,14 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
                 return;
             if (!this.parser) {
                 this.parser = await this.loadLib();
+                this.parser.addParser({
+                    expression: /#EXTIMG/,
+                    customType: 'poster',
+                    dataParser: function (line) {
+                        return line.replace('#EXTIMG:', '').trim();
+                    },
+                    segment: true
+                });
             }
             const result = await fetch(this.url);
             const manifest = await result.text();
@@ -635,7 +590,7 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
                     value = [{ uri: this.url, title: '' }];
                 }
                 else if (!isStreamVideo) {
-                    value = [...segments];
+                    value = [...segments].map(segment => ({ ...segment, poster: segment?.custom?.poster || '' }));
                 }
                 this.renderPlaylist(value);
             }

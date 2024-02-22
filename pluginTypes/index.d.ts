@@ -143,7 +143,6 @@ declare module "@scom/scom-media-player/common/player.tsx" {
         private onPlay;
         private onRepeat;
         private onShuffle;
-        private renderControls;
         resizeLayout(mobile: boolean): void;
         init(): Promise<void>;
         render(): any;
