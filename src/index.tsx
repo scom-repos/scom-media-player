@@ -186,8 +186,8 @@ export default class ScomMediaPlayer extends Module {
     this.onPlay(tracks[newIndex])
   }
 
-  private onStateChanged() {
-    this.playList.togglePlay(this.player.isPlaying);
+  private onStateChanged(value: boolean) {
+    this.playList.togglePlay(value);
   }
 
   getConfigurators() {

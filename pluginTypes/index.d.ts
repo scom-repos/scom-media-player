@@ -76,12 +76,13 @@ declare module "@scom/scom-media-player/common/player.tsx" {
     import { ControlElement, Module, Container } from '@ijstech/components';
     import { ITrack } from "@scom/scom-media-player/inteface.ts";
     type callbackType = () => void;
+    type changedCallbackType = (value: boolean) => void;
     interface ScomMediaPlayerPlayerElement extends ControlElement {
         track?: ITrack;
         url?: string;
         onNext?: callbackType;
         onPrev?: callbackType;
-        onStateChanged?: callbackType;
+        onStateChanged?: changedCallbackType;
     }
     global {
         namespace JSX {
@@ -106,26 +107,17 @@ declare module "@scom/scom-media-player/common/player.tsx" {
         private lblStart;
         private lblEnd;
         private pnlRange;
-        private playerWrapper;
-        private pnlInfo;
-        private pnlControls;
-        private pnlTimeline;
-        private pnlRandom;
-        private pnlRepeat;
-        private playerGrid;
         private _data;
-        private isMinimized;
         private isRepeat;
         onNext: callbackType;
         onPrev: callbackType;
-        onStateChanged: callbackType;
+        onStateChanged: changedCallbackType;
         constructor(parent?: Container, options?: any);
         static create(options?: ScomMediaPlayerPlayerElement, parent?: Container): Promise<ScomMediaPlayerPlayer>;
         get track(): ITrack;
         set track(value: ITrack);
         get url(): string;
         set url(value: string);
-        get isPlaying(): boolean;
         setData(data: IPlayer): void;
         private endedHandler;
         private timeUpdateHandler;
@@ -145,6 +137,7 @@ declare module "@scom/scom-media-player/common/player.tsx" {
         private onShuffle;
         resizeLayout(mobile: boolean): void;
         init(): Promise<void>;
+        private initMediaSession;
         render(): any;
     }
 }

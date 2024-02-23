@@ -10,7 +10,6 @@ import {
   Range,
   Panel,
   moment,
-  Control,
   GridLayout,
   Video
 } from '@ijstech/components';
@@ -19,13 +18,14 @@ import { customRangeStyle } from './index.css';
 const Theme = Styles.Theme.ThemeVars;
 
 type callbackType = () => void;
+type changedCallbackType = (value: boolean) => void;
 
 interface ScomMediaPlayerPlayerElement extends ControlElement {
   track?: ITrack;
   url?: string;
   onNext?: callbackType;
   onPrev?: callbackType;
-  onStateChanged?: callbackType;
+  onStateChanged?: changedCallbackType;
 }
 
 declare global {
@@ -41,6 +41,8 @@ interface IPlayer {
   url?: string;
 }
 
+const DEFAULT_SKIP_TIME = 10;
+
 @customElements('i-scom-media-player--player')
 export class ScomMediaPlayerPlayer extends Module {
   private player: any;
@@ -54,21 +56,21 @@ export class ScomMediaPlayerPlayer extends Module {
   private lblStart: Label;
   private lblEnd: Label;
   private pnlRange: Panel;
-  private playerWrapper: Panel;
-  private pnlInfo: Panel;
-  private pnlControls: Panel;
-  private pnlTimeline: Panel;
-  private pnlRandom: Panel;
-  private pnlRepeat: Panel;
-  private playerGrid: GridLayout;
+  // private playerWrapper: Panel;
+  // private pnlInfo: Panel;
+  // private pnlControls: Panel;
+  // private pnlTimeline: Panel;
+  // private pnlRandom: Panel;
+  // private pnlRepeat: Panel;
+  // private playerGrid: GridLayout;
 
   private _data: IPlayer;
-  private isMinimized: boolean = false;
+  // private isMinimized: boolean = false;
   private isRepeat: boolean = false;
 
   onNext: callbackType;
   onPrev: callbackType;
-  onStateChanged: callbackType;
+  onStateChanged: changedCallbackType;
 
   constructor(parent?: Container, options?: any) {
     super(parent, options);
@@ -97,12 +99,8 @@ export class ScomMediaPlayerPlayer extends Module {
     this._data.url = value ?? '';
   }
 
-  get isPlaying() {
-    return this.player?.played() && !this.player?.paused();
-  }
-
   setData(data: IPlayer) {
-    this.isMinimized = false;
+    // this.isMinimized = false;
     this._data = {...data};
   }
 
@@ -124,27 +122,24 @@ export class ScomMediaPlayerPlayer extends Module {
   }
 
   playTrack(track: ITrack) {
-    const self = this;
     if (this.track?.uri && this.track.uri === track.uri) {
       this.togglePlay();
     } else {
-      // this.player.pause();
+      if (!this.player.paused()) this.player.pause();
       this.track = {...track};
       const type = this.getTrackType(track.uri);
       const src = this.getTrackSrc(track.uri);
       this.player.src({src, type});
-      this.player.ready(function() {
-        self.renderTrack();
-        self.player.play();
-      });
-      this.iconPlay.name = 'pause-circle';
+      this.playHandler();
     }
   }
 
   private playHandler() {
     const self = this;
     this.player.ready(function() {
+      self.renderTrack();
       self.player.play().then(() => {
+        self.iconPlay.name = 'pause-circle';
         self.updateMetadata();
       })
     });
@@ -216,7 +211,6 @@ export class ScomMediaPlayerPlayer extends Module {
       this.player.pause();
       this.iconPlay.name = 'play-circle';
     }
-    if (this.onStateChanged) this.onStateChanged();
   }
 
   private playNextTrack() {
@@ -313,13 +307,56 @@ export class ScomMediaPlayerPlayer extends Module {
     this.onStateChanged = this.getAttribute('onStateChanged', true) || this.onStateChanged;
     const track = this.getAttribute('track', true);
     const url = this.getAttribute('url', true);
-    this.player = await this.video.getPlayer();
-    if (this.player) {
-      this.player.on('timeupdate', this.timeUpdateHandler);
-      this.player.on('loadedmetadata', this.updateDuration);
-      this.player.on('ended', this.endedHandler);
-    }
     this.setData({ track, url });
+    this.player = await this.video.getPlayer();
+    const self = this;
+    if (this.player) {
+      this.player.ready(function() {
+        self.player.on('timeupdate', self.timeUpdateHandler);
+        self.player.on('loadedmetadata', self.updateDuration);
+        self.player.on('ended', self.endedHandler);
+        self.player.on('play', function() {
+          navigator.mediaSession.playbackState = 'playing';
+          if (self.onStateChanged) self.onStateChanged(true);
+        });
+        self.player.on('pause', function() {
+          navigator.mediaSession.playbackState = 'paused';
+          if (self.onStateChanged) self.onStateChanged(false);
+        });
+      })
+    }
+    this.initMediaSession();
+  }
+
+  private initMediaSession() {
+    const self = this;
+    navigator.mediaSession.setActionHandler('previoustrack', function() {
+      self.playPrevTrack();
+    });
+
+    navigator.mediaSession.setActionHandler('nexttrack', function() {
+      self.playNextTrack();
+    });
+
+    navigator.mediaSession.setActionHandler('seekbackward', function(event) {
+      const skipTime = event.seekOffset || DEFAULT_SKIP_TIME;
+      self.player.currentTime(Math.max(self.player.currentTime() - skipTime, 0));
+      this.updatePositionState();
+    });
+
+    navigator.mediaSession.setActionHandler('seekforward', function(event) {
+      const skipTime = event.seekOffset || DEFAULT_SKIP_TIME;
+      self.player.currentTime(Math.min(self.player.currentTime() + skipTime, self.player.duration()));
+      this.updatePositionState();
+    });
+
+    navigator.mediaSession.setActionHandler('play', async function() {
+      await self.player.play();
+    });
+
+    navigator.mediaSession.setActionHandler('pause', function() {
+      self.player.pause();
+    });
   }
 
   render() {

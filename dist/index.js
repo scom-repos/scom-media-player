@@ -88,7 +88,8 @@ define("@scom/scom-media-player/common/playList.tsx", ["require", "exports", "@i
             }
         }
         onTrackClick(target, track) {
-            this.updateActiveTrack(target);
+            // this.updateActiveTrack(target);
+            this.currentTrackEl = target;
             if (this.onItemClicked)
                 this.onItemClicked(track);
         }
@@ -157,10 +158,11 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ScomMediaPlayerPlayer = void 0;
     const Theme = components_3.Styles.Theme.ThemeVars;
+    const DEFAULT_SKIP_TIME = 10;
     let ScomMediaPlayerPlayer = class ScomMediaPlayerPlayer extends components_3.Module {
         constructor(parent, options) {
             super(parent, options);
-            this.isMinimized = false;
+            // private isMinimized: boolean = false;
             this.isRepeat = false;
             this.timeUpdateHandler = this.timeUpdateHandler.bind(this);
             this.updateDuration = this.updateDuration.bind(this);
@@ -183,11 +185,8 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
         set url(value) {
             this._data.url = value ?? '';
         }
-        get isPlaying() {
-            return this.player?.played() && !this.player?.paused();
-        }
         setData(data) {
-            this.isMinimized = false;
+            // this.isMinimized = false;
             this._data = { ...data };
         }
         endedHandler() {
@@ -209,27 +208,25 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
                 this.lblStart.caption = (0, components_3.moment)(currentTime).format('mm:ss');
         }
         playTrack(track) {
-            const self = this;
             if (this.track?.uri && this.track.uri === track.uri) {
                 this.togglePlay();
             }
             else {
-                // this.player.pause();
+                if (!this.player.paused())
+                    this.player.pause();
                 this.track = { ...track };
                 const type = this.getTrackType(track.uri);
                 const src = this.getTrackSrc(track.uri);
                 this.player.src({ src, type });
-                this.player.ready(function () {
-                    self.renderTrack();
-                    self.player.play();
-                });
-                this.iconPlay.name = 'pause-circle';
+                this.playHandler();
             }
         }
         playHandler() {
             const self = this;
             this.player.ready(function () {
+                self.renderTrack();
                 self.player.play().then(() => {
+                    self.iconPlay.name = 'pause-circle';
                     self.updateMetadata();
                 });
             });
@@ -288,8 +285,6 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
                 this.player.pause();
                 this.iconPlay.name = 'play-circle';
             }
-            if (this.onStateChanged)
-                this.onStateChanged();
         }
         playNextTrack() {
             if (this.onNext)
@@ -381,13 +376,52 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
             this.onStateChanged = this.getAttribute('onStateChanged', true) || this.onStateChanged;
             const track = this.getAttribute('track', true);
             const url = this.getAttribute('url', true);
-            this.player = await this.video.getPlayer();
-            if (this.player) {
-                this.player.on('timeupdate', this.timeUpdateHandler);
-                this.player.on('loadedmetadata', this.updateDuration);
-                this.player.on('ended', this.endedHandler);
-            }
             this.setData({ track, url });
+            this.player = await this.video.getPlayer();
+            const self = this;
+            if (this.player) {
+                this.player.ready(function () {
+                    self.player.on('timeupdate', self.timeUpdateHandler);
+                    self.player.on('loadedmetadata', self.updateDuration);
+                    self.player.on('ended', self.endedHandler);
+                    self.player.on('play', function () {
+                        navigator.mediaSession.playbackState = 'playing';
+                        if (self.onStateChanged)
+                            self.onStateChanged(true);
+                    });
+                    self.player.on('pause', function () {
+                        navigator.mediaSession.playbackState = 'paused';
+                        if (self.onStateChanged)
+                            self.onStateChanged(false);
+                    });
+                });
+            }
+            this.initMediaSession();
+        }
+        initMediaSession() {
+            const self = this;
+            navigator.mediaSession.setActionHandler('previoustrack', function () {
+                self.playPrevTrack();
+            });
+            navigator.mediaSession.setActionHandler('nexttrack', function () {
+                self.playNextTrack();
+            });
+            navigator.mediaSession.setActionHandler('seekbackward', function (event) {
+                const skipTime = event.seekOffset || DEFAULT_SKIP_TIME;
+                self.player.currentTime(Math.max(self.player.currentTime() - skipTime, 0));
+                this.updatePositionState();
+            });
+            navigator.mediaSession.setActionHandler('seekforward', function (event) {
+                const skipTime = event.seekOffset || DEFAULT_SKIP_TIME;
+                self.player.currentTime(Math.min(self.player.currentTime() + skipTime, self.player.duration()));
+                this.updatePositionState();
+            });
+            navigator.mediaSession.setActionHandler('play', async function () {
+                await self.player.play();
+            });
+            navigator.mediaSession.setActionHandler('pause', function () {
+                self.player.pause();
+            });
         }
         render() {
             return (this.$render("i-panel", { id: "playerWrapper", width: "100%", height: '100%', background: { color: Theme.background.paper } },
@@ -638,8 +672,8 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
             this.playList.activeTrack = newIndex;
             this.onPlay(tracks[newIndex]);
         }
-        onStateChanged() {
-            this.playList.togglePlay(this.player.isPlaying);
+        onStateChanged(value) {
+            this.playList.togglePlay(value);
         }
         getConfigurators() {
             return [
