@@ -124,7 +124,7 @@ define("@scom/scom-media-player/common/playList.tsx", ["require", "exports", "@i
                 await this.setData(data);
         }
         render() {
-            return (this.$render("i-vstack", { width: '100%', gap: "1rem" },
+            return (this.$render("i-vstack", { width: '100%', gap: "1rem", padding: { top: '0.5rem' } },
                 this.$render("i-hstack", { id: "pnlHeader", verticalAlignment: 'center', gap: "0.5rem", background: { color: Theme.background.paper }, padding: { top: '0.75rem', bottom: '0.75rem', left: '1rem', right: '1rem' } },
                     this.$render("i-image", { id: "imgPlaylist", url: "", width: '8rem', height: 'auto', objectFit: 'cover', border: { radius: '0.25rem' }, stack: { shrink: '0' } }),
                     this.$render("i-vstack", { gap: "0.25rem" },
@@ -167,6 +167,7 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
             this.timeUpdateHandler = this.timeUpdateHandler.bind(this);
             this.updateDuration = this.updateDuration.bind(this);
             this.endedHandler = this.endedHandler.bind(this);
+            this.updateMetadata = this.updateMetadata.bind(this);
         }
         static async create(options, parent) {
             let self = new this(parent, options);
@@ -226,7 +227,6 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
             this.player.ready(function () {
                 self.renderTrack();
                 self.player.play().then(() => {
-                    self.iconPlay.name = 'pause-circle';
                     self.updateMetadata();
                 });
             });
@@ -304,69 +304,6 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
         }
         onShuffle() {
         }
-        // private onExpand(target: Control, event: MouseEvent) {
-        //   event.stopPropagation();
-        //   if (!window.matchMedia('(max-width: 767px)').matches) return;
-        //   this.isMinimized = !this.isMinimized;
-        //   if (this.isMinimized) {
-        //     this.playerWrapper.mediaQueries = [{
-        //       maxWidth: '767px',
-        //       properties: {
-        //         position: 'fixed',
-        //         bottom: '0.5rem',
-        //         left: '0px',
-        //         zIndex: 9999,
-        //         maxHeight: '3.5rem'
-        //       }
-        //     }];
-        //     this.playerGrid.mediaQueries = [{
-        //       maxWidth: '767px',
-        //       properties: {
-        //         padding: {left: '1rem', right: '1rem', top: '0.5rem', bottom: '0.5rem'},
-        //         gap: {row: '0px !important', column: '0.5rem !important'},
-        //         templateColumns: ['2.5rem', 'minmax(auto, calc(100% - 11.5rem))', '9rem'],
-        //         templateRows: ['1fr']
-        //       }
-        //     }];
-        //     this.pnlTimeline.mediaQueries = [{
-        //       maxWidth: '767px',
-        //       properties: {visible: false, maxWidth: '100%'}
-        //     }];
-        //     this.imgTrack.mediaQueries = [ {
-        //       maxWidth: '767px',
-        //       properties: {
-        //         maxWidth: '2.5rem',
-        //         border: {radius: '50%'}
-        //       }
-        //     }];
-        //     this.pnlRepeat.mediaQueries = [{
-        //       maxWidth: '767px',
-        //       properties: {visible: false, maxWidth: '100%'}
-        //     }];
-        //     this.pnlRandom.mediaQueries = [{
-        //       maxWidth: '767px',
-        //       properties: {visible: false, maxWidth: '100%'}
-        //     }];
-        //   } else {
-        //     this.playerGrid.mediaQueries = [];
-        //     this.playerWrapper.mediaQueries = [
-        //       {
-        //         maxWidth: '767px',
-        //         properties: {
-        //           position: 'fixed',
-        //           left: '0px',
-        //           bottom: '0px',
-        //           zIndex: 9999,
-        //           maxHeight: '100dvh'
-        //         }
-        //       }
-        //     ];
-        //     this.pnlTimeline.mediaQueries = [];
-        //     this.imgTrack.mediaQueries = [];
-        //     this.pnlRepeat.mediaQueries = [];
-        //     this.pnlRandom.mediaQueries = [];
-        //   }
-        // }
         resizeLayout(mobile) {
         }
         async init() {
@@ -386,11 +323,13 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
                     self.player.on('ended', self.endedHandler);
                     self.player.on('play', function () {
                         navigator.mediaSession.playbackState = 'playing';
+                        self.iconPlay.name = 'pause-circle';
                         if (self.onStateChanged)
                             self.onStateChanged(true);
                     });
                     self.player.on('pause', function () {
                         navigator.mediaSession.playbackState = 'paused';
+                        self.iconPlay.name = 'play-circle';
                         if (self.onStateChanged)
                             self.onStateChanged(false);
                     });
@@ -409,12 +348,12 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
             navigator.mediaSession.setActionHandler('seekbackward', function (event) {
                 const skipTime = event.seekOffset || DEFAULT_SKIP_TIME;
                 self.player.currentTime(Math.max(self.player.currentTime() - skipTime, 0));
-                this.updatePositionState();
+                self.updatePositionState();
             });
             navigator.mediaSession.setActionHandler('seekforward', function (event) {
                 const skipTime = event.seekOffset || DEFAULT_SKIP_TIME;
                 self.player.currentTime(Math.min(self.player.currentTime() + skipTime, self.player.duration()));
-                this.updatePositionState();
+                self.updatePositionState();
             });
             navigator.mediaSession.setActionHandler('play', async function () {
                 await self.player.play();

@@ -10,7 +10,6 @@ import {
   Range,
   Panel,
   moment,
-  GridLayout,
   Video
 } from '@ijstech/components';
 import { ITrack } from '../inteface';
@@ -77,6 +76,7 @@ export class ScomMediaPlayerPlayer extends Module {
     this.timeUpdateHandler = this.timeUpdateHandler.bind(this);
     this.updateDuration = this.updateDuration.bind(this);
     this.endedHandler = this.endedHandler.bind(this);
+    this.updateMetadata = this.updateMetadata.bind(this);
   }
 
   static async create(options?: ScomMediaPlayerPlayerElement, parent?: Container) {
@@ -100,7 +100,6 @@ export class ScomMediaPlayerPlayer extends Module {
   }
 
   setData(data: IPlayer) {
-    // this.isMinimized = false;
     this._data = {...data};
   }
 
@@ -139,7 +138,6 @@ export class ScomMediaPlayerPlayer extends Module {
     this.player.ready(function() {
       self.renderTrack();
       self.player.play().then(() => {
-        self.iconPlay.name = 'pause-circle';
         self.updateMetadata();
       })
     });
@@ -233,70 +231,6 @@ export class ScomMediaPlayerPlayer extends Module {
   private onShuffle() {
   }
 
-  // private onExpand(target: Control, event: MouseEvent) {
-  //   event.stopPropagation();
-  //   if (!window.matchMedia('(max-width: 767px)').matches) return;
-  //   this.isMinimized = !this.isMinimized;
-  //   if (this.isMinimized) {
-  //     this.playerWrapper.mediaQueries = [{
-  //       maxWidth: '767px',
-  //       properties: {
-  //         position: 'fixed',
-  //         bottom: '0.5rem',
-  //         left: '0px',
-  //         zIndex: 9999,
-  //         maxHeight: '3.5rem'
-  //       }
-  //     }];
-  //     this.playerGrid.mediaQueries = [{
-  //       maxWidth: '767px',
-  //       properties: {
-  //         padding: {left: '1rem', right: '1rem', top: '0.5rem', bottom: '0.5rem'},
-  //         gap: {row: '0px !important', column: '0.5rem !important'},
-  //         templateColumns: ['2.5rem', 'minmax(auto, calc(100% - 11.5rem))', '9rem'],
-  //         templateRows: ['1fr']
-  //       }
-  //     }];
-  //     this.pnlTimeline.mediaQueries = [{
-  //       maxWidth: '767px',
-  //       properties: {visible: false, maxWidth: '100%'}
-  //     }];
-  //     this.imgTrack.mediaQueries = [ {
-  //       maxWidth: '767px',
-  //       properties: {
-  //         maxWidth: '2.5rem',
-  //         border: {radius: '50%'}
-  //       }
-  //     }];
-  //     this.pnlRepeat.mediaQueries = [{
-  //       maxWidth: '767px',
-  //       properties: {visible: false, maxWidth: '100%'}
-  //     }];
-  //     this.pnlRandom.mediaQueries = [{
-  //       maxWidth: '767px',
-  //       properties: {visible: false, maxWidth: '100%'}
-  //     }];
-  //   } else {
-  //     this.playerGrid.mediaQueries = [];
-  //     this.playerWrapper.mediaQueries = [
-  //       {
-  //         maxWidth: '767px',
-  //         properties: {
-  //           position: 'fixed',
-  //           left: '0px',
-  //           bottom: '0px',
-  //           zIndex: 9999,
-  //           maxHeight: '100dvh'
-  //         }
-  //       }
-  //     ];
-  //     this.pnlTimeline.mediaQueries = [];
-  //     this.imgTrack.mediaQueries = [];
-  //     this.pnlRepeat.mediaQueries = [];
-  //     this.pnlRandom.mediaQueries = [];
-  //   }
-  // }
-
   resizeLayout(mobile: boolean) {
   }
 
@@ -317,13 +251,15 @@ export class ScomMediaPlayerPlayer extends Module {
         self.player.on('ended', self.endedHandler);
         self.player.on('play', function() {
           navigator.mediaSession.playbackState = 'playing';
+          self.iconPlay.name = 'pause-circle';
           if (self.onStateChanged) self.onStateChanged(true);
         });
         self.player.on('pause', function() {
           navigator.mediaSession.playbackState = 'paused';
+          self.iconPlay.name = 'play-circle';
           if (self.onStateChanged) self.onStateChanged(false);
         });
-      })
+      });
     }
     this.initMediaSession();
   }
@@ -341,13 +277,13 @@ export class ScomMediaPlayerPlayer extends Module {
     navigator.mediaSession.setActionHandler('seekbackward', function(event) {
       const skipTime = event.seekOffset || DEFAULT_SKIP_TIME;
       self.player.currentTime(Math.max(self.player.currentTime() - skipTime, 0));
-      this.updatePositionState();
+      self.updatePositionState();
     });
 
     navigator.mediaSession.setActionHandler('seekforward', function(event) {
       const skipTime = event.seekOffset || DEFAULT_SKIP_TIME;
       self.player.currentTime(Math.min(self.player.currentTime() + skipTime, self.player.duration()));
-      this.updatePositionState();
+      self.updatePositionState();
     });
 
     navigator.mediaSession.setActionHandler('play', async function() {
