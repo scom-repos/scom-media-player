@@ -168,7 +168,8 @@ export class ScomMediaPlayerPlaylist extends Module {
   }
 
   private onTrackClick(target: Control, track: ITrack) {
-    this.updateActiveTrack(target);
+    // this.updateActiveTrack(target);
+    this.currentTrackEl = target;
     if (this.onItemClicked) this.onItemClicked(track);
   }
 
@@ -203,7 +204,7 @@ export class ScomMediaPlayerPlaylist extends Module {
 
   render() {
     return (
-      <i-vstack width={'100%'} gap="1rem">
+      <i-vstack width={'100%'} gap="1rem" padding={{top: '0.5rem'}}>
         <i-hstack
           id="pnlHeader"
           verticalAlignment='center' gap="0.5rem"
