@@ -10,7 +10,6 @@ import {
   Range,
   Panel,
   moment,
-  Control,
   GridLayout,
   Video
 } from '@ijstech/components';
@@ -19,13 +18,14 @@ import { customRangeStyle } from './index.css';
 const Theme = Styles.Theme.ThemeVars;
 
 type callbackType = () => void;
+type changedCallbackType = (value: boolean) => void;
 
 interface ScomMediaPlayerPlayerElement extends ControlElement {
   track?: ITrack;
   url?: string;
   onNext?: callbackType;
   onPrev?: callbackType;
-  onStateChanged?: callbackType;
+  onStateChanged?: changedCallbackType;
 }
 
 declare global {
@@ -41,6 +41,8 @@ interface IPlayer {
   url?: string;
 }
 
+const DEFAULT_SKIP_TIME = 10;
+
 @customElements('i-scom-media-player--player')
 export class ScomMediaPlayerPlayer extends Module {
   private player: any;
@@ -54,21 +56,21 @@ export class ScomMediaPlayerPlayer extends Module {
   private lblStart: Label;
   private lblEnd: Label;
   private pnlRange: Panel;
-  private playerWrapper: Panel;
-  private pnlInfo: Panel;
-  private pnlControls: Panel;
-  private pnlTimeline: Panel;
-  private pnlRandom: Panel;
-  private pnlRepeat: Panel;
-  private playerGrid: GridLayout;
+  // private playerWrapper: Panel;
+  // private pnlInfo: Panel;
+  // private pnlControls: Panel;
+  // private pnlTimeline: Panel;
+  // private pnlRandom: Panel;
+  // private pnlRepeat: Panel;
+  // private playerGrid: GridLayout;
 
   private _data: IPlayer;
-  private isMinimized: boolean = false;
+  // private isMinimized: boolean = false;
   private isRepeat: boolean = false;
 
   onNext: callbackType;
   onPrev: callbackType;
-  onStateChanged: callbackType;
+  onStateChanged: changedCallbackType;
 
   constructor(parent?: Container, options?: any) {
     super(parent, options);
@@ -97,12 +99,8 @@ export class ScomMediaPlayerPlayer extends Module {
     this._data.url = value ?? '';
   }
 
-  get isPlaying() {
-    return this.player?.played() && !this.player?.paused();
-  }
-
   setData(data: IPlayer) {
-    this.isMinimized = false;
+    // this.isMinimized = false;
     this._data = {...data};
   }
 
@@ -124,27 +122,24 @@ export class ScomMediaPlayerPlayer extends Module {
   }
 
   playTrack(track: ITrack) {
-    const self = this;
     if (this.track?.uri && this.track.uri === track.uri) {
       this.togglePlay();
     } else {
-      // this.player.pause();
+      if (!this.player.paused()) this.player.pause();
       this.track = {...track};
       const type = this.getTrackType(track.uri);
       const src = this.getTrackSrc(track.uri);
       this.player.src({src, type});
-      this.player.ready(function() {
-        self.renderTrack();
-        self.player.play();
-      });
-      this.iconPlay.name = 'pause-circle';
+      this.playHandler();
     }
   }
 
   private playHandler() {
     const self = this;
     this.player.ready(function() {
+      self.renderTrack();
       self.player.play().then(() => {
+        self.iconPlay.name = 'pause-circle';
         self.updateMetadata();
       })
     });
@@ -216,7 +211,6 @@ export class ScomMediaPlayerPlayer extends Module {
       this.player.pause();
       this.iconPlay.name = 'play-circle';
     }
-    if (this.onStateChanged) this.onStateChanged();
   }
 
   private playNextTrack() {
@@ -303,240 +297,6 @@ export class ScomMediaPlayerPlayer extends Module {
   //   }
   // }
 
-  private renderControls() {
-    this.imgTrack = (
-      <i-image
-        id="imgTrack"
-        width={'13rem'} height={'auto'}
-        minHeight={'6.25rem'}
-        margin={{left: 'auto', right: 'auto'}}
-        display='block'
-        background={{color: Theme.background.default}}
-      ></i-image>
-    )
-    this.pnlInfo = (
-      <i-hstack
-        id="pnlInfo"
-        horizontalAlignment='space-between'
-        verticalAlignment='center'
-        margin={{top: '1rem', bottom: '1rem'}}
-        width={'100%'}
-        overflow={'hidden'}
-        mediaQueries={[
-          {
-            maxWidth: '767px',
-            properties: {
-              margin: {top: 0, bottom: 0}
-            }
-          }
-        ]}
-      >
-        <i-vstack gap="0.25rem" verticalAlignment='center' maxWidth={'100%'}>
-          <i-label
-            id="lblTrack"
-            caption=''
-            font={{weight: 600, size: 'clamp(1rem, 0.95rem + 0.25vw, 1.25rem)'}}
-            lineHeight={'1.375rem'}
-            maxWidth={'100%'}
-            textOverflow='ellipsis'
-          ></i-label>
-          <i-label
-            id="lblArtist"
-            caption=''
-            maxWidth={'100%'}
-            textOverflow='ellipsis'
-            font={{size: 'clamp(0.75rem, 0.7rem + 0.25vw, 1rem)'}}
-          ></i-label>
-        </i-vstack>
-      </i-hstack>
-    )
-    this.pnlTimeline = (
-      <i-vstack
-        id="pnlTimeline"
-        width={'100%'}
-        // mediaQueries={[
-        //   {
-        //     maxWidth: '767px',
-        //     properties: {visible: false, maxWidth: '100%'}
-        //   }
-        // ]}
-      >
-        <i-panel id="pnlRange" stack={{'grow': '1', 'shrink': '1'}}></i-panel>
-        <i-hstack
-          horizontalAlignment='space-between'
-          gap="0.25rem"
-        >
-          <i-label id="lblStart" caption='0:00' font={{size: '0.875rem'}}></i-label>
-          <i-label id='lblEnd' caption='0:00' font={{size: '0.875rem'}}></i-label>
-        </i-hstack>
-      </i-vstack>
-    )
-    this.pnlControls = (
-      <i-hstack
-        id="pnlControls"
-        verticalAlignment='center'
-        horizontalAlignment='space-between'
-        gap={'1.25rem'}
-        width={'100%'}
-        mediaQueries={[
-          {
-            maxWidth: '767px',
-            properties: {
-              gap: '0.5rem'
-            }
-          }
-        ]}
-      >
-        <i-panel
-          id="pnlRandom"
-          cursor='pointer'
-          hover={{opacity: 0.5}}
-          // mediaQueries={[
-          //   {
-          //     maxWidth: '767px',
-          //     properties: {visible: false, maxWidth: '100%'}
-          //   }
-          // ]}
-          onClick={() => this.onShuffle()}
-        >
-          <i-icon
-            name="random"
-            width={'1rem'}
-            height={'1rem'}
-            fill={Theme.text.primary}
-          ></i-icon>
-        </i-panel>
-        <i-grid-layout
-          verticalAlignment="stretch"
-          columnsPerRow={3}
-          height={'2.5rem'}
-          border={{radius: '0.25rem', width: '1px', style: 'solid', color: Theme.divider}}
-          // mediaQueries={[
-          //   {
-          //     maxWidth: '767px',
-          //     properties: {
-          //       border: {radius: '0px', width: '1px', style: 'none', color: Theme.divider}
-          //     }
-          //   }
-          // ]}
-          stack={{grow: '1', shrink: '1'}}
-        >
-          <i-vstack
-            verticalAlignment='center'
-            horizontalAlignment='center'
-            cursor='pointer'
-            hover={{opacity: 0.5}}
-            onClick={() => this.playPrevTrack()}
-          >
-            <i-icon
-              name="step-backward"
-              width={'1rem'} height={'1rem'}
-              fill={Theme.text.primary}
-            ></i-icon>
-          </i-vstack>
-          <i-vstack
-            verticalAlignment='center'
-            horizontalAlignment='center'
-            cursor='pointer'
-            hover={{opacity: 0.5}}
-            onClick={() => this.onPlay()}
-          >
-            <i-icon
-              id="iconPlay"
-              name="play-circle"
-              width={'1.75rem'} height={'1.75rem'}
-              fill={Theme.text.primary}
-            ></i-icon>
-          </i-vstack>
-          <i-vstack
-            verticalAlignment='center'
-            horizontalAlignment='center'
-            cursor='pointer'
-            hover={{opacity: 0.5}}
-            onClick={() => this.playNextTrack()}
-          >
-            <i-icon
-              name="step-forward"
-              width={'1rem'} height={'1rem'}
-              fill={Theme.text.primary}
-            ></i-icon>
-          </i-vstack>
-        </i-grid-layout>
-        <i-panel
-          id="pnlRepeat"
-          cursor='pointer'
-          hover={{opacity: 0.5}}
-          onClick={() => this.onRepeat()}
-          // mediaQueries={[
-          //   {
-          //     maxWidth: '767px',
-          //     properties: {visible: false, maxWidth: '100%'}
-          //   }
-          // ]}
-        >
-          <i-icon
-            id="iconRepeat"
-            name="redo"
-            width={'0.875rem'} height={'0.875rem'}
-            fill={Theme.text.primary}
-          ></i-icon>
-        </i-panel>
-      </i-hstack>
-    )
-    // this.pnlFooter = (
-    //   <i-hstack
-    //     id="pnlFooter"
-    //     verticalAlignment='center'
-    //     horizontalAlignment='space-between'
-    //     gap={'1.25rem'}
-    //     width={'100%'}
-    //     margin={{top: '1rem'}}
-    //     mediaQueries={[
-    //       {
-    //         maxWidth: '767px',
-    //         properties: {visible: false, maxWidth: '100%'}
-    //       }
-    //     ]}
-    //   >
-    //     <i-panel cursor='pointer' hover={{opacity: 0.5}}>
-    //       <i-icon
-    //         name="music"
-    //         width={'1rem'} height={'1rem'}
-    //         fill={Theme.text.primary}
-    //       ></i-icon>
-    //     </i-panel>
-    //     <i-hstack
-    //       verticalAlignment="center"
-    //       gap="0.25rem"
-    //       cursor='pointer'
-    //       onClick={this.onCollect}
-    //     >
-    //       <i-panel cursor='pointer' hover={{opacity: 0.5}}>
-    //         <i-icon
-    //           name="exclamation-circle"
-    //           width={'1rem'} height={'1rem'}
-    //           fill={Theme.text.primary}
-    //         ></i-icon>
-    //       </i-panel>
-    //       <i-label
-    //         caption='Collect'
-    //         font={{size: '0.875rem', weight: 600}}
-    //       ></i-label>
-    //     </i-hstack>
-    //     <i-panel cursor='pointer' hover={{opacity: 0.5}}>
-    //       <i-icon
-    //         name="share-alt"
-    //         width={'1rem'} height={'1rem'}
-    //         fill={Theme.text.primary}
-    //       ></i-icon>
-    //     </i-panel>
-    //   </i-hstack>
-    // )
-    this.video = <i-video id="video" isStreaming={true} visible={false} url=""></i-video>
-
-    this.playerGrid.append(this.imgTrack, this.video, this.pnlInfo, this.pnlControls, this.pnlTimeline);
-  }
-
   resizeLayout(mobile: boolean) {
   }
 
@@ -547,14 +307,56 @@ export class ScomMediaPlayerPlayer extends Module {
     this.onStateChanged = this.getAttribute('onStateChanged', true) || this.onStateChanged;
     const track = this.getAttribute('track', true);
     const url = this.getAttribute('url', true);
-    this.renderControls();
-    this.player = await this.video.getPlayer();
-    if (this.player) {
-      this.player.on('timeupdate', this.timeUpdateHandler);
-      this.player.on('loadedmetadata', this.updateDuration);
-      this.player.on('ended', this.endedHandler);
-    }
     this.setData({ track, url });
+    this.player = await this.video.getPlayer();
+    const self = this;
+    if (this.player) {
+      this.player.ready(function() {
+        self.player.on('timeupdate', self.timeUpdateHandler);
+        self.player.on('loadedmetadata', self.updateDuration);
+        self.player.on('ended', self.endedHandler);
+        self.player.on('play', function() {
+          navigator.mediaSession.playbackState = 'playing';
+          if (self.onStateChanged) self.onStateChanged(true);
+        });
+        self.player.on('pause', function() {
+          navigator.mediaSession.playbackState = 'paused';
+          if (self.onStateChanged) self.onStateChanged(false);
+        });
+      })
+    }
+    this.initMediaSession();
+  }
+
+  private initMediaSession() {
+    const self = this;
+    navigator.mediaSession.setActionHandler('previoustrack', function() {
+      self.playPrevTrack();
+    });
+
+    navigator.mediaSession.setActionHandler('nexttrack', function() {
+      self.playNextTrack();
+    });
+
+    navigator.mediaSession.setActionHandler('seekbackward', function(event) {
+      const skipTime = event.seekOffset || DEFAULT_SKIP_TIME;
+      self.player.currentTime(Math.max(self.player.currentTime() - skipTime, 0));
+      this.updatePositionState();
+    });
+
+    navigator.mediaSession.setActionHandler('seekforward', function(event) {
+      const skipTime = event.seekOffset || DEFAULT_SKIP_TIME;
+      self.player.currentTime(Math.min(self.player.currentTime() + skipTime, self.player.duration()));
+      this.updatePositionState();
+    });
+
+    navigator.mediaSession.setActionHandler('play', async function() {
+      await self.player.play();
+    });
+
+    navigator.mediaSession.setActionHandler('pause', function() {
+      self.player.pause();
+    });
   }
 
   render() {
@@ -596,7 +398,180 @@ export class ScomMediaPlayerPlayer extends Module {
           //   }
           // ]}
           // onClick={this.onExpand}
-        ></i-grid-layout>
+        >
+          <i-image
+            id="imgTrack"
+            width={'13rem'} height={'auto'}
+            minHeight={'6.25rem'}
+            margin={{left: 'auto', right: 'auto'}}
+            display='block'
+            background={{color: Theme.background.default}}
+          ></i-image>
+          <i-video id="video" isStreaming={true} visible={false} url=""></i-video>
+          <i-hstack
+            id="pnlInfo"
+            horizontalAlignment='space-between'
+            verticalAlignment='center'
+            margin={{top: '1rem', bottom: '1rem'}}
+            width={'100%'}
+            overflow={'hidden'}
+            mediaQueries={[
+              {
+                maxWidth: '767px',
+                properties: {
+                  margin: {top: 0, bottom: 0}
+                }
+              }
+            ]}
+          >
+            <i-vstack gap="0.25rem" verticalAlignment='center' maxWidth={'100%'}>
+              <i-label
+                id="lblTrack"
+                caption=''
+                font={{weight: 600, size: 'clamp(1rem, 0.95rem + 0.25vw, 1.25rem)'}}
+                lineHeight={'1.375rem'}
+                maxWidth={'100%'}
+                textOverflow='ellipsis'
+              ></i-label>
+              <i-label
+                id="lblArtist"
+                caption=''
+                maxWidth={'100%'}
+                textOverflow='ellipsis'
+                font={{size: 'clamp(0.75rem, 0.7rem + 0.25vw, 1rem)'}}
+              ></i-label>
+            </i-vstack>
+          </i-hstack>
+          <i-vstack
+            id="pnlTimeline"
+            width={'100%'}
+            // mediaQueries={[
+            //   {
+            //     maxWidth: '767px',
+            //     properties: {visible: false, maxWidth: '100%'}
+            //   }
+            // ]}
+          >
+            <i-panel id="pnlRange" stack={{'grow': '1', 'shrink': '1'}}></i-panel>
+            <i-hstack
+              horizontalAlignment='space-between'
+              gap="0.25rem"
+            >
+              <i-label id="lblStart" caption='0:00' font={{size: '0.875rem'}}></i-label>
+              <i-label id='lblEnd' caption='0:00' font={{size: '0.875rem'}}></i-label>
+            </i-hstack>
+          </i-vstack>
+          <i-hstack
+            id="pnlControls"
+            verticalAlignment='center'
+            horizontalAlignment='space-between'
+            gap={'1.25rem'}
+            width={'100%'}
+            mediaQueries={[
+              {
+                maxWidth: '767px',
+                properties: {
+                  gap: '0.5rem'
+                }
+              }
+            ]}
+          >
+            <i-panel
+              id="pnlRandom"
+              cursor='pointer'
+              hover={{opacity: 0.5}}
+              // mediaQueries={[
+              //   {
+              //     maxWidth: '767px',
+              //     properties: {visible: false, maxWidth: '100%'}
+              //   }
+              // ]}
+              onClick={() => this.onShuffle()}
+            >
+              <i-icon
+                name="random"
+                width={'1rem'}
+                height={'1rem'}
+                fill={Theme.text.primary}
+              ></i-icon>
+            </i-panel>
+            <i-grid-layout
+              verticalAlignment="stretch"
+              columnsPerRow={3}
+              height={'2.5rem'}
+              border={{radius: '0.25rem', width: '1px', style: 'solid', color: Theme.divider}}
+              // mediaQueries={[
+              //   {
+              //     maxWidth: '767px',
+              //     properties: {
+              //       border: {radius: '0px', width: '1px', style: 'none', color: Theme.divider}
+              //     }
+              //   }
+              // ]}
+              stack={{grow: '1', shrink: '1'}}
+            >
+              <i-vstack
+                verticalAlignment='center'
+                horizontalAlignment='center'
+                cursor='pointer'
+                hover={{opacity: 0.5}}
+                onClick={() => this.playPrevTrack()}
+              >
+                <i-icon
+                  name="step-backward"
+                  width={'1rem'} height={'1rem'}
+                  fill={Theme.text.primary}
+                ></i-icon>
+              </i-vstack>
+              <i-vstack
+                verticalAlignment='center'
+                horizontalAlignment='center'
+                cursor='pointer'
+                hover={{opacity: 0.5}}
+                onClick={() => this.onPlay()}
+              >
+                <i-icon
+                  id="iconPlay"
+                  name="play-circle"
+                  width={'1.75rem'} height={'1.75rem'}
+                  fill={Theme.text.primary}
+                ></i-icon>
+              </i-vstack>
+              <i-vstack
+                verticalAlignment='center'
+                horizontalAlignment='center'
+                cursor='pointer'
+                hover={{opacity: 0.5}}
+                onClick={() => this.playNextTrack()}
+              >
+                <i-icon
+                  name="step-forward"
+                  width={'1rem'} height={'1rem'}
+                  fill={Theme.text.primary}
+                ></i-icon>
+              </i-vstack>
+            </i-grid-layout>
+            <i-panel
+              id="pnlRepeat"
+              cursor='pointer'
+              hover={{opacity: 0.5}}
+              onClick={() => this.onRepeat()}
+              // mediaQueries={[
+              //   {
+              //     maxWidth: '767px',
+              //     properties: {visible: false, maxWidth: '100%'}
+              //   }
+              // ]}
+            >
+              <i-icon
+                id="iconRepeat"
+                name="redo"
+                width={'0.875rem'} height={'0.875rem'}
+                fill={Theme.text.primary}
+              ></i-icon>
+            </i-panel>
+          </i-hstack>
+        </i-grid-layout>
       </i-panel>
     )
   }

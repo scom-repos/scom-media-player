@@ -1,4 +1,4 @@
-import { Module, customModule, Container, VStack } from '@ijstech/components';
+import { Module, customModule, Container, VStack, application } from '@ijstech/components';
 import assets from '@modules/assets';
 import ScomMediaPlayer from '@scom/scom-media-player'
 @customModule
@@ -6,6 +6,10 @@ export default class Module1 extends Module {
 
     constructor(parent?: Container, options?: any) {
         super(parent, options);
+    }
+
+    onUpload() {
+        application.showUploadModal()
     }
 
     async init() {
@@ -23,6 +27,11 @@ export default class Module1 extends Module {
                 display='block'
                 width={'100%'} height={'100dvh'}
             ></i-scom-media-player>
+            <i-button
+                caption='Upload modal'
+                padding={{top: '1rem', bottom: '1rem', left: '1rem', right: '1rem'}}
+                onClick={() => this.onUpload()}
+            ></i-button>
         </i-panel>
     }
 }
