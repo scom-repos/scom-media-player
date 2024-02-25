@@ -55,16 +55,8 @@ export class ScomMediaPlayerPlayer extends Module {
   private lblStart: Label;
   private lblEnd: Label;
   private pnlRange: Panel;
-  // private playerWrapper: Panel;
-  // private pnlInfo: Panel;
-  // private pnlControls: Panel;
-  // private pnlTimeline: Panel;
-  // private pnlRandom: Panel;
-  // private pnlRepeat: Panel;
-  // private playerGrid: GridLayout;
 
   private _data: IPlayer;
-  // private isMinimized: boolean = false;
   private isRepeat: boolean = false;
 
   onNext: callbackType;
@@ -76,7 +68,6 @@ export class ScomMediaPlayerPlayer extends Module {
     this.timeUpdateHandler = this.timeUpdateHandler.bind(this);
     this.updateDuration = this.updateDuration.bind(this);
     this.endedHandler = this.endedHandler.bind(this);
-    this.updateMetadata = this.updateMetadata.bind(this);
   }
 
   static async create(options?: ScomMediaPlayerPlayerElement, parent?: Container) {
@@ -118,6 +109,7 @@ export class ScomMediaPlayerPlayer extends Module {
     const currentTime = this.player.currentTime() * 1000;
     if (this.trackRange) this.trackRange.value = currentTime;
     if (this.lblStart) this.lblStart.caption = moment(currentTime).format('mm:ss');
+    this.updatePositionState();
   }
 
   playTrack(track: ITrack) {
@@ -135,31 +127,34 @@ export class ScomMediaPlayerPlayer extends Module {
 
   private playHandler() {
     const self = this;
-    this.player.ready(function() {
+    this.player.ready(async function() {
       self.renderTrack();
-      self.player.play().then(() => {
-        self.updateMetadata();
-      })
+      self.updateMetadata();
+      await self.player.play();
+      self.updatePositionState();
     });
   }
 
   private updateMetadata() {
-    const { title = 'No title', artist = 'No name', poster = ''} = this.track;
+    const { title = 'No title', artist = 'No name', poster = '', uri } = this.track || {};
+    if (!uri) return;
     navigator.mediaSession.metadata = new MediaMetadata({
       title,
       artist,
       album: '',
       artwork: poster ? [{src: poster}] : []
     });
-    this.updatePositionState();
   }
 
   private updatePositionState() {
     if ('setPositionState' in navigator.mediaSession) {
+      const duration = this.player.duration() || 0;
+      const position = this.player.currentTime();
+      const playbackRate = this.player.playbackRate();
       navigator.mediaSession.setPositionState({
-        duration: this.player.duration() || this.track?.duration || 0,
-        playbackRate: this.player.playbackRate(),
-        position: this.player.currentTime()
+        duration,
+        playbackRate,
+        position
       });
     }
   }
@@ -176,10 +171,10 @@ export class ScomMediaPlayerPlayer extends Module {
     this.imgTrack.url = this.track?.poster || '';
     this.lblArtist.caption = this.track?.artist || 'No name';
     this.lblTrack.caption = this.track?.title || 'No title';
-    this.updateDuration();
   }
 
   private updateDuration() {
+    this.updatePositionState();
     const durationValue = this.player?.duration() || this.track?.duration || 0;
     const duration = durationValue * 1000;
     this.lblEnd.caption = '00:00';
@@ -265,34 +260,46 @@ export class ScomMediaPlayerPlayer extends Module {
   }
 
   private initMediaSession() {
-    const self = this;
-    navigator.mediaSession.setActionHandler('previoustrack', function() {
-      self.playPrevTrack();
-    });
+    if ("mediaSession" in navigator) {
+      const self = this;
+      const player = this.player;
+      navigator.mediaSession.setActionHandler("play", () => {
+        player.play();
+        navigator.mediaSession.playbackState = "playing";
+      });
 
-    navigator.mediaSession.setActionHandler('nexttrack', function() {
-      self.playNextTrack();
-    });
+      navigator.mediaSession.setActionHandler("pause", () => {
+        player.pause();
+        navigator.mediaSession.playbackState = "paused";
+      });
 
-    navigator.mediaSession.setActionHandler('seekbackward', function(event) {
-      const skipTime = event.seekOffset || DEFAULT_SKIP_TIME;
-      self.player.currentTime(Math.max(self.player.currentTime() - skipTime, 0));
-      self.updatePositionState();
-    });
+      navigator.mediaSession.setActionHandler('previoustrack', function() {
+        self.playPrevTrack();
+      });
 
-    navigator.mediaSession.setActionHandler('seekforward', function(event) {
-      const skipTime = event.seekOffset || DEFAULT_SKIP_TIME;
-      self.player.currentTime(Math.min(self.player.currentTime() + skipTime, self.player.duration()));
-      self.updatePositionState();
-    });
+      navigator.mediaSession.setActionHandler('nexttrack', function() {
+        self.playNextTrack();
+      });
 
-    navigator.mediaSession.setActionHandler('play', async function() {
-      await self.player.play();
-    });
+      navigator.mediaSession.setActionHandler('seekbackward', function(event) {
+        const skipTime = event.seekOffset || DEFAULT_SKIP_TIME;
+        player.currentTime(Math.max(player.currentTime() - skipTime, 0));
+        self.updatePositionState();
+      });
 
-    navigator.mediaSession.setActionHandler('pause', function() {
-      self.player.pause();
-    });
+      navigator.mediaSession.setActionHandler('seekforward', function(event) {
+        const skipTime = event.seekOffset || DEFAULT_SKIP_TIME;
+        player.currentTime(Math.min(player.currentTime() + skipTime, player.duration()));
+        self.updatePositionState();
+      });
+
+      try {
+        navigator.mediaSession.setActionHandler('stop', function() {
+          if (!player.paused()) player.pause();
+          navigator.mediaSession.playbackState = "none";
+        });
+      } catch(error) {}
+    }
   }
 
   render() {
@@ -343,7 +350,7 @@ export class ScomMediaPlayerPlayer extends Module {
             display='block'
             background={{color: Theme.background.default}}
           ></i-image>
-          <i-video id="video" isStreaming={true} visible={false} url=""></i-video>
+          <i-video id="video" isStreaming={true} visible={false} url="https://video.ijs.dev/3210752f-56a4-11ed-80cd-0242ac120003/index.m3u8"></i-video>
           <i-hstack
             id="pnlInfo"
             horizontalAlignment='space-between'
