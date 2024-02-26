@@ -88,7 +88,12 @@ define("@scom/scom-media-player/common/playList.tsx", ["require", "exports", "@i
             }
         }
         onTrackClick(target, track) {
-            // this.updateActiveTrack(target);
+            if (this.currentTrackEl) {
+                this.currentTrackEl.background.color = Theme.action.hoverBackground;
+                const icon = this.currentTrackEl.querySelector('i-icon');
+                if (icon)
+                    icon.name = 'angle-right';
+            }
             this.currentTrackEl = target;
             if (this.onItemClicked)
                 this.onItemClicked(track);
@@ -124,7 +129,7 @@ define("@scom/scom-media-player/common/playList.tsx", ["require", "exports", "@i
                 await this.setData(data);
         }
         render() {
-            return (this.$render("i-vstack", { width: '100%', gap: "1rem" },
+            return (this.$render("i-vstack", { width: '100%', gap: "1rem", padding: { top: '0.5rem' } },
                 this.$render("i-hstack", { id: "pnlHeader", verticalAlignment: 'center', gap: "0.5rem", background: { color: Theme.background.paper }, padding: { top: '0.75rem', bottom: '0.75rem', left: '1rem', right: '1rem' } },
                     this.$render("i-image", { id: "imgPlaylist", url: "", width: '8rem', height: 'auto', objectFit: 'cover', border: { radius: '0.25rem' }, stack: { shrink: '0' } }),
                     this.$render("i-vstack", { gap: "0.25rem" },
@@ -162,7 +167,6 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
     let ScomMediaPlayerPlayer = class ScomMediaPlayerPlayer extends components_3.Module {
         constructor(parent, options) {
             super(parent, options);
-            // private isMinimized: boolean = false;
             this.isRepeat = false;
             this.timeUpdateHandler = this.timeUpdateHandler.bind(this);
             this.updateDuration = this.updateDuration.bind(this);
@@ -186,7 +190,6 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
             this._data.url = value ?? '';
         }
         setData(data) {
-            // this.isMinimized = false;
             this._data = { ...data };
         }
         endedHandler() {
@@ -206,6 +209,7 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
                 this.trackRange.value = currentTime;
             if (this.lblStart)
                 this.lblStart.caption = (0, components_3.moment)(currentTime).format('mm:ss');
+            this.updatePositionState();
         }
         playTrack(track) {
             if (this.track?.uri && this.track.uri === track.uri) {
@@ -223,30 +227,33 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
         }
         playHandler() {
             const self = this;
-            this.player.ready(function () {
+            this.player.ready(async function () {
                 self.renderTrack();
-                self.player.play().then(() => {
-                    self.iconPlay.name = 'pause-circle';
-                    self.updateMetadata();
-                });
+                self.updateMetadata();
+                await self.player.play();
+                self.updatePositionState();
             });
         }
         updateMetadata() {
-            const { title = 'No title', artist = 'No name', poster = '' } = this.track;
+            const { title = 'No title', artist = 'No name', poster = '', uri } = this.track || {};
+            if (!uri)
+                return;
             navigator.mediaSession.metadata = new MediaMetadata({
                 title,
                 artist,
                 album: '',
                 artwork: poster ? [{ src: poster }] : []
             });
-            this.updatePositionState();
         }
         updatePositionState() {
             if ('setPositionState' in navigator.mediaSession) {
+                const duration = this.player.duration() || 0;
+                const position = this.player.currentTime();
+                const playbackRate = this.player.playbackRate();
                 navigator.mediaSession.setPositionState({
-                    duration: this.player.duration() || this.track?.duration || 0,
-                    playbackRate: this.player.playbackRate(),
-                    position: this.player.currentTime()
+                    duration,
+                    playbackRate,
+                    position
                 });
             }
         }
@@ -260,9 +267,9 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
             this.imgTrack.url = this.track?.poster || '';
             this.lblArtist.caption = this.track?.artist || 'No name';
             this.lblTrack.caption = this.track?.title || 'No title';
-            this.updateDuration();
         }
         updateDuration() {
+            this.updatePositionState();
             const durationValue = this.player?.duration() || this.track?.duration || 0;
             const duration = durationValue * 1000;
             this.lblEnd.caption = '00:00';
@@ -304,69 +311,6 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
         }
         onShuffle() {
         }
-        // private onExpand(target: Control, event: MouseEvent) {
-        //   event.stopPropagation();
-        //   if (!window.matchMedia('(max-width: 767px)').matches) return;
-        //   this.isMinimized = !this.isMinimized;
-        //   if (this.isMinimized) {
-        //     this.playerWrapper.mediaQueries = [{
-        //       maxWidth: '767px',
-        //       properties: {
-        //         position: 'fixed',
-        //         bottom: '0.5rem',
-        //         left: '0px',
-        //         zIndex: 9999,
-        //         maxHeight: '3.5rem'
-        //       }
-        //     }];
-        //     this.playerGrid.mediaQueries = [{
-        //       maxWidth: '767px',
-        //       properties: {
-        //         padding: {left: '1rem', right: '1rem', top: '0.5rem', bottom: '0.5rem'},
-        //         gap: {row: '0px !important', column: '0.5rem !important'},
-        //         templateColumns: ['2.5rem', 'minmax(auto, calc(100% - 11.5rem))', '9rem'],
-        //         templateRows: ['1fr']
-        //       }
-        //     }];
-        //     this.pnlTimeline.mediaQueries = [{
-        //       maxWidth: '767px',
-        //       properties: {visible: false, maxWidth: '100%'}
-        //     }];
-        //     this.imgTrack.mediaQueries = [ {
-        //       maxWidth: '767px',
-        //       properties: {
-        //         maxWidth: '2.5rem',
-        //         border: {radius: '50%'}
-        //       }
-        //     }];
-        //     this.pnlRepeat.mediaQueries = [{
-        //       maxWidth: '767px',
-        //       properties: {visible: false, maxWidth: '100%'}
-        //     }];
-        //     this.pnlRandom.mediaQueries = [{
-        //       maxWidth: '767px',
-        //       properties: {visible: false, maxWidth: '100%'}
-        //     }];
-        //   } else {
-        //     this.playerGrid.mediaQueries = [];
-        //     this.playerWrapper.mediaQueries = [
-        //       {
-        //         maxWidth: '767px',
-        //         properties: {
-        //           position: 'fixed',
-        //           left: '0px',
-        //           bottom: '0px',
-        //           zIndex: 9999,
-        //           maxHeight: '100dvh'
-        //         }
-        //       }
-        //     ];
-        //     this.pnlTimeline.mediaQueries = [];
-        //     this.imgTrack.mediaQueries = [];
-        //     this.pnlRepeat.mediaQueries = [];
-        //     this.pnlRandom.mediaQueries = [];
-        //   }
-        // }
         resizeLayout(mobile) {
         }
         async init() {
@@ -386,11 +330,13 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
                     self.player.on('ended', self.endedHandler);
                     self.player.on('play', function () {
                         navigator.mediaSession.playbackState = 'playing';
+                        self.iconPlay.name = 'pause-circle';
                         if (self.onStateChanged)
                             self.onStateChanged(true);
                     });
                     self.player.on('pause', function () {
                         navigator.mediaSession.playbackState = 'paused';
+                        self.iconPlay.name = 'play-circle';
                         if (self.onStateChanged)
                             self.onStateChanged(false);
                     });
@@ -399,35 +345,48 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
             this.initMediaSession();
         }
         initMediaSession() {
-            const self = this;
-            navigator.mediaSession.setActionHandler('previoustrack', function () {
-                self.playPrevTrack();
-            });
-            navigator.mediaSession.setActionHandler('nexttrack', function () {
-                self.playNextTrack();
-            });
-            navigator.mediaSession.setActionHandler('seekbackward', function (event) {
-                const skipTime = event.seekOffset || DEFAULT_SKIP_TIME;
-                self.player.currentTime(Math.max(self.player.currentTime() - skipTime, 0));
-                this.updatePositionState();
-            });
-            navigator.mediaSession.setActionHandler('seekforward', function (event) {
-                const skipTime = event.seekOffset || DEFAULT_SKIP_TIME;
-                self.player.currentTime(Math.min(self.player.currentTime() + skipTime, self.player.duration()));
-                this.updatePositionState();
-            });
-            navigator.mediaSession.setActionHandler('play', async function () {
-                await self.player.play();
-            });
-            navigator.mediaSession.setActionHandler('pause', function () {
-                self.player.pause();
-            });
+            if ("mediaSession" in navigator) {
+                const self = this;
+                const player = this.player;
+                navigator.mediaSession.setActionHandler("play", () => {
+                    player.play();
+                    navigator.mediaSession.playbackState = "playing";
+                });
+                navigator.mediaSession.setActionHandler("pause", () => {
+                    player.pause();
+                    navigator.mediaSession.playbackState = "paused";
+                });
+                navigator.mediaSession.setActionHandler('previoustrack', function () {
+                    self.playPrevTrack();
+                });
+                navigator.mediaSession.setActionHandler('nexttrack', function () {
+                    self.playNextTrack();
+                });
+                navigator.mediaSession.setActionHandler('seekbackward', function (event) {
+                    const skipTime = event.seekOffset || DEFAULT_SKIP_TIME;
+                    player.currentTime(Math.max(player.currentTime() - skipTime, 0));
+                    self.updatePositionState();
+                });
+                navigator.mediaSession.setActionHandler('seekforward', function (event) {
+                    const skipTime = event.seekOffset || DEFAULT_SKIP_TIME;
+                    player.currentTime(Math.min(player.currentTime() + skipTime, player.duration()));
+                    self.updatePositionState();
+                });
+                try {
+                    navigator.mediaSession.setActionHandler('stop', function () {
+                        if (!player.paused())
+                            player.pause();
+                        navigator.mediaSession.playbackState = "none";
+                    });
+                }
+                catch (error) { }
+            }
         }
         render() {
             return (this.$render("i-panel", { id: "playerWrapper", width: "100%", height: '100%', background: { color: Theme.background.paper } },
                 this.$render("i-grid-layout", { id: "playerGrid", gap: { row: '1rem', column: '0px' }, width: "100%", height: '100%', padding: { top: '1rem', bottom: '1rem', left: '1rem', right: '1rem' }, templateRows: ['auto'], templateColumns: ['1fr'], verticalAlignment: 'center' },
                     this.$render("i-image", { id: "imgTrack", width: '13rem', height: 'auto', minHeight: '6.25rem', margin: { left: 'auto', right: 'auto' }, display: 'block', background: { color: Theme.background.default } }),
-                    this.$render("i-video", { id: "video", isStreaming: true, visible: false, url: "" }),
+                    this.$render("i-video", { id: "video", isStreaming: true, visible: false, url: "https://video.ijs.dev/3210752f-56a4-11ed-80cd-0242ac120003/index.m3u8" }),
                     this.$render("i-hstack", { id: "pnlInfo", horizontalAlignment: 'space-between', verticalAlignment: 'center', margin: { top: '1rem', bottom: '1rem' }, width: '100%', overflow: 'hidden', mediaQueries: [
                             {
                                 maxWidth: '767px',
@@ -604,8 +563,8 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
             this.parser.push(manifest);
             this.parser.end();
             this.parsedData = this.parser.manifest;
+            this.player.url = this.url;
             console.log(this.parser.manifest);
-            this.player.setData({ url: (0, utils_1.getPath)(this.url) });
             this.checkParsedData();
         }
         checkParsedData() {
@@ -655,8 +614,8 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
         onPlay(data) {
             if (!data)
                 return;
-            this.player.visible = true;
             this.player.playTrack(data);
+            this.player.visible = true;
         }
         onNext() {
             const tracks = this.playList.tracks;

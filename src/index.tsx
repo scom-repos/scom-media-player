@@ -115,8 +115,8 @@ export default class ScomMediaPlayer extends Module {
     this.parser.push(manifest);
     this.parser.end();
     this.parsedData = this.parser.manifest;
+    this.player.url = this.url;
     console.log(this.parser.manifest)
-    this.player.setData({ url: getPath(this.url) });
     this.checkParsedData();
   }
 
@@ -166,8 +166,8 @@ export default class ScomMediaPlayer extends Module {
 
   private onPlay(data: ITrack) {
     if (!data) return;
-    this.player.visible = true;
     this.player.playTrack(data);
+    this.player.visible = true;
   }
 
   private onNext() {

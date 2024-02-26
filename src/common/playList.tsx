@@ -168,7 +168,11 @@ export class ScomMediaPlayerPlaylist extends Module {
   }
 
   private onTrackClick(target: Control, track: ITrack) {
-    // this.updateActiveTrack(target);
+    if (this.currentTrackEl) {
+      this.currentTrackEl.background.color = Theme.action.hoverBackground;
+      const icon = this.currentTrackEl.querySelector('i-icon') as Icon;
+      if (icon) icon.name = 'angle-right';
+    }
     this.currentTrackEl = target;
     if (this.onItemClicked) this.onItemClicked(track);
   }
