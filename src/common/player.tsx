@@ -13,7 +13,7 @@ import {
   Video
 } from '@ijstech/components';
 import { ITrack } from '../inteface';
-import { customRangeStyle } from './index.css';
+import { customRangeStyle, marqueeStyle } from './index.css';
 const Theme = Styles.Theme.ThemeVars;
 
 type callbackType = () => void;
@@ -24,6 +24,7 @@ interface ScomMediaPlayerPlayerElement extends ControlElement {
   url?: string;
   onNext?: callbackType;
   onPrev?: callbackType;
+  onRandom?: callbackType;
   onStateChanged?: changedCallbackType;
 }
 
@@ -48,6 +49,7 @@ export class ScomMediaPlayerPlayer extends Module {
   private video: Video;
   private iconPlay: Icon;
   private iconRepeat: Icon;
+  private iconShuffle: Icon;
   private imgTrack: Image;
   private lblTrack: Label;
   private lblArtist: Label;
@@ -58,9 +60,11 @@ export class ScomMediaPlayerPlayer extends Module {
 
   private _data: IPlayer;
   private isRepeat: boolean = false;
+  private isShuffle: boolean = false;
 
   onNext: callbackType;
   onPrev: callbackType;
+  onRandom: callbackType;
   onStateChanged: changedCallbackType;
 
   constructor(parent?: Container, options?: any) {
@@ -95,13 +99,14 @@ export class ScomMediaPlayerPlayer extends Module {
   }
 
   private endedHandler() {
-    this.iconPlay.name = 'play-circle';
+    this.player.currentTime(0);
+    navigator.mediaSession.playbackState = 'none';
     if (this.isRepeat) {
       this.player.play();
-      this.iconPlay.name = 'pause-circle';
+    } else if (this.isShuffle) {
+      this.playRandomTrack();
     } else {
       this.playNextTrack();
-      this.iconPlay.name = 'pause-circle';
     }
   }
 
@@ -113,25 +118,25 @@ export class ScomMediaPlayerPlayer extends Module {
   }
 
   playTrack(track: ITrack) {
-    if (this.track?.uri && this.track.uri === track.uri) {
+    const currentSrc = this.player.currentSrc();
+    if (currentSrc && currentSrc === track.uri) {
       this.togglePlay();
     } else {
-      if (!this.player.paused()) this.player.pause();
+      // if (!this.player?.paused()) this.player.pause();
+      this.player.reset();
       this.track = {...track};
       const type = this.getTrackType(track.uri);
       const src = this.getTrackSrc(track.uri);
       this.player.src({src, type});
+      this.renderTrack();
       this.playHandler();
     }
   }
 
   private playHandler() {
     const self = this;
-    this.player.ready(async function() {
-      self.renderTrack();
-      self.updateMetadata();
-      await self.player.play();
-      self.updatePositionState();
+    this.player.ready(function() {
+      self.player.play();
     });
   }
 
@@ -171,10 +176,15 @@ export class ScomMediaPlayerPlayer extends Module {
     this.imgTrack.url = this.track?.poster || '';
     this.lblArtist.caption = this.track?.artist || 'No name';
     this.lblTrack.caption = this.track?.title || 'No title';
+    const parentWidth = this.lblTrack?.parentElement?.offsetWidth || 0;
+    if (parentWidth && parentWidth < this.lblTrack.offsetWidth) {
+      this.lblTrack.classList.add('marquee');
+    } else {
+      this.lblTrack.classList.remove('marquee');
+    }
   }
 
   private updateDuration() {
-    this.updatePositionState();
     const durationValue = this.player?.duration() || this.track?.duration || 0;
     const duration = durationValue * 1000;
     this.lblEnd.caption = '00:00';
@@ -199,10 +209,8 @@ export class ScomMediaPlayerPlayer extends Module {
   private togglePlay() {
     if (this.player.paused()) {
       this.player.play();
-      this.iconPlay.name = 'pause-circle';
     } else {
       this.player.pause();
-      this.iconPlay.name = 'play-circle';
     }
   }
 
@@ -212,6 +220,10 @@ export class ScomMediaPlayerPlayer extends Module {
 
   private playPrevTrack() {
     if (this.onPrev) this.onPrev();
+  }
+
+  private playRandomTrack() {
+    if (this.onRandom) this.onRandom();
   }
 
   private onPlay() {
@@ -224,6 +236,8 @@ export class ScomMediaPlayerPlayer extends Module {
   }
 
   private onShuffle() {
+    this.isShuffle = !this.isShuffle;
+    this.iconShuffle.fill = this.isShuffle ? Theme.colors.success.main : Theme.text.primary;
   }
 
   resizeLayout(mobile: boolean) {
@@ -233,6 +247,7 @@ export class ScomMediaPlayerPlayer extends Module {
     super.init();
     this.onNext = this.getAttribute('onNext', true) || this.onNext;
     this.onPrev = this.getAttribute('onPrev', true) || this.onPrev;
+    this.onRandom = this.getAttribute('onRandom', true) || this.onRandom;
     this.onStateChanged = this.getAttribute('onStateChanged', true) || this.onStateChanged;
     const track = this.getAttribute('track', true);
     const url = this.getAttribute('url', true);
@@ -242,7 +257,11 @@ export class ScomMediaPlayerPlayer extends Module {
     if (this.player) {
       this.player.ready(function() {
         self.player.on('timeupdate', self.timeUpdateHandler);
-        self.player.on('loadedmetadata', self.updateDuration);
+        self.player.on('loadeddata', () => {
+          self.updateDuration();
+          self.updateMetadata();
+          self.updatePositionState();
+        })
         self.player.on('ended', self.endedHandler);
         self.player.on('play', function() {
           navigator.mediaSession.playbackState = 'playing';
@@ -263,6 +282,7 @@ export class ScomMediaPlayerPlayer extends Module {
     if ("mediaSession" in navigator) {
       const self = this;
       const player = this.player;
+      navigator.mediaSession.setPositionState(null);
       navigator.mediaSession.setActionHandler("play", () => {
         player.play();
         navigator.mediaSession.playbackState = "playing";
@@ -308,18 +328,6 @@ export class ScomMediaPlayerPlayer extends Module {
         id="playerWrapper"
         width="100%" height={'100%'}
         background={{color: Theme.background.paper}}
-        // mediaQueries={[
-        //   {
-        //     maxWidth: '767px',
-        //     properties: {
-        //       position: 'fixed',
-        //       bottom: '0.5rem',
-        //       left: '0px',
-        //       zIndex: 9999,
-        //       maxHeight: '3.5rem'
-        //     }
-        //   }
-        // ]}
       >
         <i-grid-layout
           id="playerGrid"
@@ -329,18 +337,6 @@ export class ScomMediaPlayerPlayer extends Module {
           templateRows={['auto']}
           templateColumns={['1fr']}
           verticalAlignment='center'
-          // mediaQueries={[
-          //   {
-          //     maxWidth: '767px',
-          //     properties: {
-          //       padding: {left: '1rem', right: '1rem', top: '0.5rem', bottom: '0.5rem'},
-          //       gap: {row: '0px !important', column: '0.5rem !important'},
-          //       templateColumns: ['2.5rem', 'repeat(2, 1fr)'],
-          //       templateRows: ['1fr']
-          //     }
-          //   }
-          // ]}
-          // onClick={this.onExpand}
         >
           <i-image
             id="imgTrack"
@@ -350,7 +346,7 @@ export class ScomMediaPlayerPlayer extends Module {
             display='block'
             background={{color: Theme.background.default}}
           ></i-image>
-          <i-video id="video" isStreaming={true} visible={false} url="https://video.ijs.dev/3210752f-56a4-11ed-80cd-0242ac120003/index.m3u8"></i-video>
+          <i-video id="video" isStreaming={true} visible={false}></i-video>
           <i-hstack
             id="pnlInfo"
             horizontalAlignment='space-between'
@@ -368,14 +364,15 @@ export class ScomMediaPlayerPlayer extends Module {
             ]}
           >
             <i-vstack gap="0.25rem" verticalAlignment='center' maxWidth={'100%'}>
-              <i-label
-                id="lblTrack"
-                caption=''
-                font={{weight: 600, size: 'clamp(1rem, 0.95rem + 0.25vw, 1.25rem)'}}
-                lineHeight={'1.375rem'}
-                maxWidth={'100%'}
-                textOverflow='ellipsis'
-              ></i-label>
+              <i-panel maxWidth={'100%'} overflow={'hidden'}>
+                <i-label
+                  id="lblTrack"
+                  caption=''
+                  font={{weight: 600, size: 'clamp(1rem, 0.95rem + 0.25vw, 1.25rem)'}}
+                  lineHeight={'1.375rem'}
+                  class={marqueeStyle}
+                ></i-label>
+              </i-panel>
               <i-label
                 id="lblArtist"
                 caption=''
@@ -388,12 +385,6 @@ export class ScomMediaPlayerPlayer extends Module {
           <i-vstack
             id="pnlTimeline"
             width={'100%'}
-            // mediaQueries={[
-            //   {
-            //     maxWidth: '767px',
-            //     properties: {visible: false, maxWidth: '100%'}
-            //   }
-            // ]}
           >
             <i-panel id="pnlRange" stack={{'grow': '1', 'shrink': '1'}}></i-panel>
             <i-hstack
@@ -423,15 +414,10 @@ export class ScomMediaPlayerPlayer extends Module {
               id="pnlRandom"
               cursor='pointer'
               hover={{opacity: 0.5}}
-              // mediaQueries={[
-              //   {
-              //     maxWidth: '767px',
-              //     properties: {visible: false, maxWidth: '100%'}
-              //   }
-              // ]}
               onClick={() => this.onShuffle()}
             >
               <i-icon
+                id="iconShuffle"
                 name="random"
                 width={'1rem'}
                 height={'1rem'}
@@ -443,14 +429,6 @@ export class ScomMediaPlayerPlayer extends Module {
               columnsPerRow={3}
               height={'2.5rem'}
               border={{radius: '0.25rem', width: '1px', style: 'solid', color: Theme.divider}}
-              // mediaQueries={[
-              //   {
-              //     maxWidth: '767px',
-              //     properties: {
-              //       border: {radius: '0px', width: '1px', style: 'none', color: Theme.divider}
-              //     }
-              //   }
-              // ]}
               stack={{grow: '1', shrink: '1'}}
             >
               <i-vstack
@@ -499,12 +477,6 @@ export class ScomMediaPlayerPlayer extends Module {
               cursor='pointer'
               hover={{opacity: 0.5}}
               onClick={() => this.onRepeat()}
-              // mediaQueries={[
-              //   {
-              //     maxWidth: '767px',
-              //     properties: {visible: false, maxWidth: '100%'}
-              //   }
-              // ]}
             >
               <i-icon
                 id="iconRepeat"

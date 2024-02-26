@@ -11,6 +11,18 @@ declare module "@scom/scom-media-player/inteface.ts" {
         timeline?: number;
     }
 }
+/// <amd-module name="@scom/scom-media-player/common/index.css.ts" />
+declare module "@scom/scom-media-player/common/index.css.ts" {
+    export const customRangeStyle: string;
+    export const marqueeStyle: string;
+    export const trackStyle: string;
+}
+/// <amd-module name="@scom/scom-media-player/utils.ts" />
+declare module "@scom/scom-media-player/utils.ts" {
+    export const isStreaming: (url: string) => boolean;
+    export const getPath: (url: string) => string;
+    export const formatTime: (time: number | string) => string;
+}
 /// <amd-module name="@scom/scom-media-player/common/playList.tsx" />
 declare module "@scom/scom-media-player/common/playList.tsx" {
     import { ControlElement, Module, Container } from '@ijstech/components';
@@ -67,10 +79,6 @@ declare module "@scom/scom-media-player/common/playList.tsx" {
         render(): any;
     }
 }
-/// <amd-module name="@scom/scom-media-player/common/index.css.ts" />
-declare module "@scom/scom-media-player/common/index.css.ts" {
-    export const customRangeStyle: string;
-}
 /// <amd-module name="@scom/scom-media-player/common/player.tsx" />
 declare module "@scom/scom-media-player/common/player.tsx" {
     import { ControlElement, Module, Container } from '@ijstech/components';
@@ -82,6 +90,7 @@ declare module "@scom/scom-media-player/common/player.tsx" {
         url?: string;
         onNext?: callbackType;
         onPrev?: callbackType;
+        onRandom?: callbackType;
         onStateChanged?: changedCallbackType;
     }
     global {
@@ -100,6 +109,7 @@ declare module "@scom/scom-media-player/common/player.tsx" {
         private video;
         private iconPlay;
         private iconRepeat;
+        private iconShuffle;
         private imgTrack;
         private lblTrack;
         private lblArtist;
@@ -109,8 +119,10 @@ declare module "@scom/scom-media-player/common/player.tsx" {
         private pnlRange;
         private _data;
         private isRepeat;
+        private isShuffle;
         onNext: callbackType;
         onPrev: callbackType;
+        onRandom: callbackType;
         onStateChanged: changedCallbackType;
         constructor(parent?: Container, options?: any);
         static create(options?: ScomMediaPlayerPlayerElement, parent?: Container): Promise<ScomMediaPlayerPlayer>;
@@ -132,6 +144,7 @@ declare module "@scom/scom-media-player/common/player.tsx" {
         private togglePlay;
         private playNextTrack;
         private playPrevTrack;
+        private playRandomTrack;
         private onPlay;
         private onRepeat;
         private onShuffle;
@@ -150,11 +163,6 @@ declare module "@scom/scom-media-player/common/index.ts" {
 declare module "@scom/scom-media-player/index.css.ts" {
     export const customVideoStyle: string;
     export const customScrollStyle: string;
-}
-/// <amd-module name="@scom/scom-media-player/utils.ts" />
-declare module "@scom/scom-media-player/utils.ts" {
-    export const isStreaming: (url: string) => boolean;
-    export const getPath: (url: string) => string;
 }
 /// <amd-module name="@scom/scom-media-player" />
 declare module "@scom/scom-media-player" {
@@ -195,6 +203,7 @@ declare module "@scom/scom-media-player" {
         private onPlay;
         private onNext;
         private onPrev;
+        private onRandom;
         private onStateChanged;
         getConfigurators(): {
             name: string;

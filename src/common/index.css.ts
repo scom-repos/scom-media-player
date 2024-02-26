@@ -9,3 +9,52 @@ export const customRangeStyle = Styles.style({
     }
   }
 })
+
+const marqueeAnim = Styles.keyframes({
+  '0%': {
+    transform: 'translateX(100%)'
+  },
+  '100%': {
+    transform: 'translateX(-100%)'
+  }
+});
+
+export const marqueeStyle = Styles.style({
+  whiteSpace: 'nowrap',
+  $nest: {
+    '&.marquee': {
+      animation: `${marqueeAnim} 5s linear infinite`
+    }
+  }
+})
+
+export const trackStyle = Styles.style({
+  $nest: {
+    'i-icon': {
+      opacity: 0
+    },
+    'i-image': {
+      opacity: 1
+    },
+    '&:hover': {
+      $nest: {
+        'i-icon': {
+          opacity: 1
+        },
+        'i-image': {
+          opacity: 0.5
+        }
+      }
+    },
+    '&.is-actived': {
+      $nest: {
+        'i-icon': {
+          opacity: 1
+        },
+        'i-image': {
+          opacity: 0.5
+        }
+      }
+    }
+  }
+})
