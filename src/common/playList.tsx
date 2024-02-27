@@ -12,6 +12,8 @@ import {
   Panel
 } from '@ijstech/components';
 import { ITrack } from '../inteface';
+import { trackStyle } from './index.css';
+import { formatTime } from '../utils';
 const Theme = Styles.Theme.ThemeVars;
 
 interface ScomMediaPlayerPlaylistElement extends ControlElement {
@@ -133,16 +135,30 @@ export class ScomMediaPlayerPlaylist extends Module {
             background={{color: Theme.action.hoverBackground}}
             cursor='pointer'
             hover={{backgroundColor: Theme.background.main}}
-            onClick={(target: Control) => this.onTrackClick(target, track)}
+            class={trackStyle}
+            onClick={(target: Control, event: MouseEvent) => this.onTrackClick(target, event, track)}
           >
             <i-hstack verticalAlignment='center' gap={'0.75rem'} height={'100%'}>
-              <i-image
-                url={track.poster || ''}
+              <i-panel
                 stack={{shrink: '0'}}
                 width={'2.5rem'} height={'2.5rem'}
-                background={{color: Theme.background.modal}}
-                objectFit={'cover'}
-              ></i-image>
+              >
+                <i-image
+                  url={track.poster || ''}
+                  width={'100%'} height={'100%'}
+                  display='inline-block'
+                  background={{color: Theme.background.modal}}
+                  objectFit={'cover'}
+                ></i-image>
+                <i-icon
+                  name='play'
+                  width={'1rem'} height={'1rem'}
+                  position='absolute'
+                  top={'0.75rem'} left={'0.75rem'}
+                  opacity={0}
+                  zIndex={10}
+                ></i-icon>
+              </i-panel>
               <i-vstack gap="0.25rem" verticalAlignment='center'>
                 <i-label
                   caption={track.title || 'No title'}
@@ -157,9 +173,10 @@ export class ScomMediaPlayerPlaylist extends Module {
                 ></i-label>
               </i-vstack>
             </i-hstack>
-            <i-panel hover={{opacity: 0.5}}>
-              <i-icon name="angle-right" width={'1rem'} height={'1rem'} fill={Theme.text.primary}></i-icon>
-            </i-panel>
+            <i-label
+              caption={formatTime(track.duration)}
+              font={{size: '0.875rem', color: Theme.text.secondary}}
+            ></i-label>
           </i-hstack>
         )
         this.pnlPlaylist.appendChild(pnlTrack);
@@ -167,11 +184,13 @@ export class ScomMediaPlayerPlaylist extends Module {
     }
   }
 
-  private onTrackClick(target: Control, track: ITrack) {
+  private onTrackClick(target: Control, event: MouseEvent, track: ITrack) {
+    event.stopPropagation();
     if (this.currentTrackEl) {
       this.currentTrackEl.background.color = Theme.action.hoverBackground;
       const icon = this.currentTrackEl.querySelector('i-icon') as Icon;
-      if (icon) icon.name = 'angle-right';
+      if (icon) icon.name = 'play';
+      this.currentTrackEl.classList.remove('is-actived');
     }
     this.currentTrackEl = target;
     if (this.onItemClicked) this.onItemClicked(track);
@@ -181,21 +200,24 @@ export class ScomMediaPlayerPlaylist extends Module {
     if (this.currentTrackEl) {
       this.currentTrackEl.background.color = Theme.action.hoverBackground;
       const icon = this.currentTrackEl.querySelector('i-icon') as Icon;
-      if (icon) icon.name = 'angle-right';
+      if (icon) icon.name = 'play';
+      this.currentTrackEl.classList.remove('is-actived');
     }
     if (target) {
       target.background.color = Theme.action.activeBackground;
       const icon = target.querySelector('i-icon') as Icon;
-      if (icon) icon.name = 'pause-circle';
+      if (icon) icon.name = 'pause';
       this.currentTrackEl = target;
+      this.currentTrackEl.classList.add('is-actived');
     }
   }
 
   togglePlay(value: boolean) {
     if (this.currentTrackEl) {
+      this.currentTrackEl.classList.add('is-actived');
       this.currentTrackEl.background.color = value ? Theme.action.activeBackground : Theme.action.hoverBackground;
       const icon = this.currentTrackEl.querySelector('i-icon') as Icon;
-      if (icon) icon.name = value ? 'pause-circle' : 'angle-right';
+      if (icon) icon.name = value ? 'pause' : 'play';
     }
   }
 
