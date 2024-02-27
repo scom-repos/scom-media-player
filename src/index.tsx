@@ -65,6 +65,9 @@ export default class ScomMediaPlayer extends Module {
   constructor(parent?: Container, options?: any) {
     super(parent, options);
     this.onPlay = this.onPlay.bind(this);
+    this.onNext = this.onNext.bind(this);
+    this.onPrev = this.onPrev.bind(this);
+    this.onRandom = this.onRandom.bind(this);
   }
 
   static async create(options?: ScomMediaPlayerElement, parent?: Container) {
