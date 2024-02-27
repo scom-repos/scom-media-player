@@ -134,7 +134,6 @@ declare module "@scom/scom-media-player/common/player.tsx" {
         private endedHandler;
         private timeUpdateHandler;
         playTrack(track: ITrack): void;
-        private playHandler;
         private updateMetadata;
         private updatePositionState;
         private getTrackType;

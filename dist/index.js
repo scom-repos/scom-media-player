@@ -242,6 +242,7 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
             this.timeUpdateHandler = this.timeUpdateHandler.bind(this);
             this.updateDuration = this.updateDuration.bind(this);
             this.endedHandler = this.endedHandler.bind(this);
+            this.onPlay = this.onPlay.bind(this);
         }
         static async create(options, parent) {
             let self = new this(parent, options);
@@ -285,26 +286,26 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
             this.updatePositionState();
         }
         playTrack(track) {
+            if (!track)
+                return;
             const currentSrc = this.player.currentSrc();
             if (currentSrc && currentSrc === track.uri) {
                 this.togglePlay();
             }
             else {
-                // if (!this.player?.paused()) this.player.pause();
-                this.player.reset();
                 this.track = { ...track };
                 const type = this.getTrackType(track.uri);
                 const src = this.getTrackSrc(track.uri);
                 this.player.src({ src, type });
                 this.renderTrack();
-                this.playHandler();
+                const self = this;
+                this.player.ready(function () {
+                    self.player.play().then(() => {
+                        self.player.pause();
+                        self.player.play();
+                    });
+                });
             }
-        }
-        playHandler() {
-            const self = this;
-            this.player.ready(function () {
-                self.player.play();
-            });
         }
         updateMetadata() {
             const { title = 'No title', artist = 'No name', poster = '', uri } = this.track || {};
@@ -382,8 +383,7 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
                 this.onRandom();
         }
         onPlay() {
-            if (this.track)
-                this.playTrack(this.track);
+            this.playTrack(this.track);
         }
         onRepeat() {
             this.isRepeat = !this.isRepeat;
@@ -414,6 +414,9 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
                         self.updateMetadata();
                         self.updatePositionState();
                     });
+                    self.player.on('canplaythrough', () => {
+                        self.initMediaSession();
+                    });
                     self.player.on('ended', self.endedHandler);
                     self.player.on('play', function () {
                         navigator.mediaSession.playbackState = 'playing';
@@ -429,20 +432,16 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
                     });
                 });
             }
-            this.initMediaSession();
         }
         initMediaSession() {
             if ("mediaSession" in navigator) {
                 const self = this;
-                const player = this.player;
-                navigator.mediaSession.setPositionState(null);
-                navigator.mediaSession.setActionHandler("play", () => {
-                    player.play();
-                    navigator.mediaSession.playbackState = "playing";
+                let player = this.player;
+                navigator.mediaSession.setActionHandler("play", async () => {
+                    await player.play();
                 });
                 navigator.mediaSession.setActionHandler("pause", () => {
                     player.pause();
-                    navigator.mediaSession.playbackState = "paused";
                 });
                 navigator.mediaSession.setActionHandler('previoustrack', function () {
                     self.playPrevTrack();
@@ -450,16 +449,16 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
                 navigator.mediaSession.setActionHandler('nexttrack', function () {
                     self.playNextTrack();
                 });
-                navigator.mediaSession.setActionHandler('seekbackward', function (event) {
-                    const skipTime = event.seekOffset || DEFAULT_SKIP_TIME;
-                    player.currentTime(Math.max(player.currentTime() - skipTime, 0));
-                    self.updatePositionState();
-                });
-                navigator.mediaSession.setActionHandler('seekforward', function (event) {
-                    const skipTime = event.seekOffset || DEFAULT_SKIP_TIME;
-                    player.currentTime(Math.min(player.currentTime() + skipTime, player.duration()));
-                    self.updatePositionState();
-                });
+                // navigator.mediaSession.setActionHandler('seekbackward', function(event) {
+                //   const skipTime = event.seekOffset || DEFAULT_SKIP_TIME;
+                //   player.currentTime(Math.max(player.currentTime() - skipTime, 0));
+                //   self.updatePositionState();
+                // });
+                // navigator.mediaSession.setActionHandler('seekforward', function(event) {
+                //   const skipTime = event.seekOffset || DEFAULT_SKIP_TIME;
+                //   player.currentTime(Math.min(player.currentTime() + skipTime, player.duration()));
+                //   self.updatePositionState();
+                // });
                 try {
                     navigator.mediaSession.setActionHandler('stop', function () {
                         if (!player.paused())
@@ -505,7 +504,7 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
                         this.$render("i-grid-layout", { verticalAlignment: "stretch", columnsPerRow: 3, height: '2.5rem', border: { radius: '0.25rem', width: '1px', style: 'solid', color: Theme.divider }, stack: { grow: '1', shrink: '1' } },
                             this.$render("i-vstack", { verticalAlignment: 'center', horizontalAlignment: 'center', cursor: 'pointer', hover: { opacity: 0.5 }, onClick: () => this.playPrevTrack() },
                                 this.$render("i-icon", { name: "step-backward", width: '1rem', height: '1rem', fill: Theme.text.primary })),
-                            this.$render("i-vstack", { verticalAlignment: 'center', horizontalAlignment: 'center', cursor: 'pointer', hover: { opacity: 0.5 }, onClick: () => this.onPlay() },
+                            this.$render("i-vstack", { verticalAlignment: 'center', horizontalAlignment: 'center', cursor: 'pointer', hover: { opacity: 0.5 }, onClick: this.onPlay },
                                 this.$render("i-icon", { id: "iconPlay", name: "play-circle", width: '1.75rem', height: '1.75rem', fill: Theme.text.primary })),
                             this.$render("i-vstack", { verticalAlignment: 'center', horizontalAlignment: 'center', cursor: 'pointer', hover: { opacity: 0.5 }, onClick: () => this.playNextTrack() },
                                 this.$render("i-icon", { name: "step-forward", width: '1rem', height: '1rem', fill: Theme.text.primary }))),
@@ -577,6 +576,9 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
             this._data = { url: '' };
             this.parsedData = {};
             this.onPlay = this.onPlay.bind(this);
+            this.onNext = this.onNext.bind(this);
+            this.onPrev = this.onPrev.bind(this);
+            this.onRandom = this.onRandom.bind(this);
         }
         static async create(options, parent) {
             let self = new this(parent, options);
