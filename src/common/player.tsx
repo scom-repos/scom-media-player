@@ -72,6 +72,7 @@ export class ScomMediaPlayerPlayer extends Module {
     this.timeUpdateHandler = this.timeUpdateHandler.bind(this);
     this.updateDuration = this.updateDuration.bind(this);
     this.endedHandler = this.endedHandler.bind(this);
+    this.onPlay = this.onPlay.bind(this);
   }
 
   static async create(options?: ScomMediaPlayerPlayerElement, parent?: Container) {
@@ -118,26 +119,24 @@ export class ScomMediaPlayerPlayer extends Module {
   }
 
   playTrack(track: ITrack) {
+    if (!track) return;
     const currentSrc = this.player.currentSrc();
     if (currentSrc && currentSrc === track.uri) {
       this.togglePlay();
     } else {
-      // if (!this.player?.paused()) this.player.pause();
-      this.player.reset();
       this.track = {...track};
       const type = this.getTrackType(track.uri);
       const src = this.getTrackSrc(track.uri);
       this.player.src({src, type});
       this.renderTrack();
-      this.playHandler();
+      const self = this;
+      this.player.ready(function() {
+        self.player.play().then(() => {
+          self.player.pause();
+          self.player.play();
+        })
+      });
     }
-  }
-
-  private playHandler() {
-    const self = this;
-    this.player.ready(function() {
-      self.player.play();
-    });
   }
 
   private updateMetadata() {
@@ -227,7 +226,7 @@ export class ScomMediaPlayerPlayer extends Module {
   }
 
   private onPlay() {
-    if (this.track) this.playTrack(this.track);
+    this.playTrack(this.track);
   }
 
   private onRepeat() {
@@ -262,6 +261,9 @@ export class ScomMediaPlayerPlayer extends Module {
           self.updateMetadata();
           self.updatePositionState();
         })
+        self.player.on('canplaythrough', () => {
+          self.initMediaSession();
+        });
         self.player.on('ended', self.endedHandler);
         self.player.on('play', function() {
           navigator.mediaSession.playbackState = 'playing';
@@ -273,24 +275,20 @@ export class ScomMediaPlayerPlayer extends Module {
           self.iconPlay.name = 'play-circle';
           if (self.onStateChanged) self.onStateChanged(false);
         });
-      });
+      })
     }
-    this.initMediaSession();
   }
 
   private initMediaSession() {
     if ("mediaSession" in navigator) {
       const self = this;
-      const player = this.player;
-      navigator.mediaSession.setPositionState(null);
-      navigator.mediaSession.setActionHandler("play", () => {
-        player.play();
-        navigator.mediaSession.playbackState = "playing";
+      let player = this.player;
+      navigator.mediaSession.setActionHandler("play", async () => {
+        await player.play();
       });
 
       navigator.mediaSession.setActionHandler("pause", () => {
         player.pause();
-        navigator.mediaSession.playbackState = "paused";
       });
 
       navigator.mediaSession.setActionHandler('previoustrack', function() {
@@ -301,17 +299,17 @@ export class ScomMediaPlayerPlayer extends Module {
         self.playNextTrack();
       });
 
-      navigator.mediaSession.setActionHandler('seekbackward', function(event) {
-        const skipTime = event.seekOffset || DEFAULT_SKIP_TIME;
-        player.currentTime(Math.max(player.currentTime() - skipTime, 0));
-        self.updatePositionState();
-      });
+      // navigator.mediaSession.setActionHandler('seekbackward', function(event) {
+      //   const skipTime = event.seekOffset || DEFAULT_SKIP_TIME;
+      //   player.currentTime(Math.max(player.currentTime() - skipTime, 0));
+      //   self.updatePositionState();
+      // });
 
-      navigator.mediaSession.setActionHandler('seekforward', function(event) {
-        const skipTime = event.seekOffset || DEFAULT_SKIP_TIME;
-        player.currentTime(Math.min(player.currentTime() + skipTime, player.duration()));
-        self.updatePositionState();
-      });
+      // navigator.mediaSession.setActionHandler('seekforward', function(event) {
+      //   const skipTime = event.seekOffset || DEFAULT_SKIP_TIME;
+      //   player.currentTime(Math.min(player.currentTime() + skipTime, player.duration()));
+      //   self.updatePositionState();
+      // });
 
       try {
         navigator.mediaSession.setActionHandler('stop', function() {
@@ -449,7 +447,7 @@ export class ScomMediaPlayerPlayer extends Module {
                 horizontalAlignment='center'
                 cursor='pointer'
                 hover={{opacity: 0.5}}
-                onClick={() => this.onPlay()}
+                onClick={this.onPlay}
               >
                 <i-icon
                   id="iconPlay"
