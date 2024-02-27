@@ -8,12 +8,90 @@ define("@scom/scom-media-player/inteface.ts", ["require", "exports"], function (
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
 });
-define("@scom/scom-media-player/common/playList.tsx", ["require", "exports", "@ijstech/components"], function (require, exports, components_1) {
+define("@scom/scom-media-player/common/index.css.ts", ["require", "exports", "@ijstech/components"], function (require, exports, components_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.trackStyle = exports.marqueeStyle = exports.customRangeStyle = void 0;
+    const Theme = components_1.Styles.Theme.ThemeVars;
+    exports.customRangeStyle = components_1.Styles.style({
+        $nest: {
+            'input[type="range"]': {
+                background: Theme.divider,
+                backgroundImage: 'linear-gradient(var(--track-color, var(--colors-info-main)), var(--track-color, var(--colors-info-main)))'
+            }
+        }
+    });
+    const marqueeAnim = components_1.Styles.keyframes({
+        '0%': {
+            transform: 'translateX(100%)'
+        },
+        '100%': {
+            transform: 'translateX(-100%)'
+        }
+    });
+    exports.marqueeStyle = components_1.Styles.style({
+        whiteSpace: 'nowrap',
+        $nest: {
+            '&.marquee': {
+                animation: `${marqueeAnim} 5s linear infinite`
+            }
+        }
+    });
+    exports.trackStyle = components_1.Styles.style({
+        $nest: {
+            'i-icon': {
+                opacity: 0
+            },
+            'i-image': {
+                opacity: 1
+            },
+            '&:hover': {
+                $nest: {
+                    'i-icon': {
+                        opacity: 1
+                    },
+                    'i-image': {
+                        opacity: 0.5
+                    }
+                }
+            },
+            '&.is-actived': {
+                $nest: {
+                    'i-icon': {
+                        opacity: 1
+                    },
+                    'i-image': {
+                        opacity: 0.5
+                    }
+                }
+            }
+        }
+    });
+});
+define("@scom/scom-media-player/utils.ts", ["require", "exports", "@ijstech/components"], function (require, exports, components_2) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.formatTime = exports.getPath = exports.isStreaming = void 0;
+    const isStreaming = (url) => {
+        const ext = url.split('.').pop();
+        return ext === 'm3u8' || ext === 'm3u';
+    };
+    exports.isStreaming = isStreaming;
+    const getPath = (url) => {
+        return url.split('/').slice(0, -1).join('/');
+    };
+    exports.getPath = getPath;
+    const formatTime = (time) => {
+        return (0, components_2.moment)(Number(time) * 1000).format('mm:ss');
+    };
+    exports.formatTime = formatTime;
+});
+define("@scom/scom-media-player/common/playList.tsx", ["require", "exports", "@ijstech/components", "@scom/scom-media-player/common/index.css.ts", "@scom/scom-media-player/utils.ts"], function (require, exports, components_3, index_css_1, utils_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ScomMediaPlayerPlaylist = void 0;
-    const Theme = components_1.Styles.Theme.ThemeVars;
-    let ScomMediaPlayerPlaylist = class ScomMediaPlayerPlaylist extends components_1.Module {
+    const Theme = components_3.Styles.Theme.ThemeVars;
+    let ScomMediaPlayerPlaylist = class ScomMediaPlayerPlaylist extends components_3.Module {
         constructor(parent, options) {
             super(parent, options);
         }
@@ -75,24 +153,27 @@ define("@scom/scom-media-player/common/playList.tsx", ["require", "exports", "@i
             this.pnlPlaylist.clearInnerHTML();
             if (this.tracks.length) {
                 for (let track of this.tracks) {
-                    const pnlTrack = (this.$render("i-hstack", { verticalAlignment: 'center', horizontalAlignment: 'space-between', gap: '0.75rem', height: '3.313rem', border: { radius: '0.5rem' }, margin: { top: '0.25rem', bottom: '0.25rem' }, padding: { left: '1rem', right: '1rem', top: '0.5rem', bottom: '0.5rem' }, background: { color: Theme.action.hoverBackground }, cursor: 'pointer', hover: { backgroundColor: Theme.background.main }, onClick: (target) => this.onTrackClick(target, track) },
+                    const pnlTrack = (this.$render("i-hstack", { verticalAlignment: 'center', horizontalAlignment: 'space-between', gap: '0.75rem', height: '3.313rem', border: { radius: '0.5rem' }, margin: { top: '0.25rem', bottom: '0.25rem' }, padding: { left: '1rem', right: '1rem', top: '0.5rem', bottom: '0.5rem' }, background: { color: Theme.action.hoverBackground }, cursor: 'pointer', hover: { backgroundColor: Theme.background.main }, class: index_css_1.trackStyle, onClick: (target, event) => this.onTrackClick(target, event, track) },
                         this.$render("i-hstack", { verticalAlignment: 'center', gap: '0.75rem', height: '100%' },
-                            this.$render("i-image", { url: track.poster || '', stack: { shrink: '0' }, width: '2.5rem', height: '2.5rem', background: { color: Theme.background.modal }, objectFit: 'cover' }),
+                            this.$render("i-panel", { stack: { shrink: '0' }, width: '2.5rem', height: '2.5rem' },
+                                this.$render("i-image", { url: track.poster || '', width: '100%', height: '100%', display: 'inline-block', background: { color: Theme.background.modal }, objectFit: 'cover' }),
+                                this.$render("i-icon", { name: 'play', width: '1rem', height: '1rem', position: 'absolute', top: '0.75rem', left: '0.75rem', opacity: 0, zIndex: 10 })),
                             this.$render("i-vstack", { gap: "0.25rem", verticalAlignment: 'center' },
                                 this.$render("i-label", { caption: track.title || 'No title', font: { size: '1rem' }, wordBreak: 'break-all', lineClamp: 1 }),
                                 this.$render("i-label", { caption: track.artist || 'No name', font: { size: '0.875rem', color: Theme.text.secondary }, textOverflow: 'ellipsis' }))),
-                        this.$render("i-panel", { hover: { opacity: 0.5 } },
-                            this.$render("i-icon", { name: "angle-right", width: '1rem', height: '1rem', fill: Theme.text.primary }))));
+                        this.$render("i-label", { caption: (0, utils_1.formatTime)(track.duration), font: { size: '0.875rem', color: Theme.text.secondary } })));
                     this.pnlPlaylist.appendChild(pnlTrack);
                 }
             }
         }
-        onTrackClick(target, track) {
+        onTrackClick(target, event, track) {
+            event.stopPropagation();
             if (this.currentTrackEl) {
                 this.currentTrackEl.background.color = Theme.action.hoverBackground;
                 const icon = this.currentTrackEl.querySelector('i-icon');
                 if (icon)
-                    icon.name = 'angle-right';
+                    icon.name = 'play';
+                this.currentTrackEl.classList.remove('is-actived');
             }
             this.currentTrackEl = target;
             if (this.onItemClicked)
@@ -103,22 +184,25 @@ define("@scom/scom-media-player/common/playList.tsx", ["require", "exports", "@i
                 this.currentTrackEl.background.color = Theme.action.hoverBackground;
                 const icon = this.currentTrackEl.querySelector('i-icon');
                 if (icon)
-                    icon.name = 'angle-right';
+                    icon.name = 'play';
+                this.currentTrackEl.classList.remove('is-actived');
             }
             if (target) {
                 target.background.color = Theme.action.activeBackground;
                 const icon = target.querySelector('i-icon');
                 if (icon)
-                    icon.name = 'pause-circle';
+                    icon.name = 'pause';
                 this.currentTrackEl = target;
+                this.currentTrackEl.classList.add('is-actived');
             }
         }
         togglePlay(value) {
             if (this.currentTrackEl) {
+                this.currentTrackEl.classList.add('is-actived');
                 this.currentTrackEl.background.color = value ? Theme.action.activeBackground : Theme.action.hoverBackground;
                 const icon = this.currentTrackEl.querySelector('i-icon');
                 if (icon)
-                    icon.name = value ? 'pause-circle' : 'angle-right';
+                    icon.name = value ? 'pause' : 'play';
             }
         }
         async init() {
@@ -140,34 +224,21 @@ define("@scom/scom-media-player/common/playList.tsx", ["require", "exports", "@i
         }
     };
     ScomMediaPlayerPlaylist = __decorate([
-        (0, components_1.customElements)('i-scom-media-player--playlist')
+        (0, components_3.customElements)('i-scom-media-player--playlist')
     ], ScomMediaPlayerPlaylist);
     exports.ScomMediaPlayerPlaylist = ScomMediaPlayerPlaylist;
 });
-define("@scom/scom-media-player/common/index.css.ts", ["require", "exports", "@ijstech/components"], function (require, exports, components_2) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.customRangeStyle = void 0;
-    const Theme = components_2.Styles.Theme.ThemeVars;
-    exports.customRangeStyle = components_2.Styles.style({
-        $nest: {
-            'input[type="range"]': {
-                background: Theme.divider,
-                backgroundImage: 'linear-gradient(var(--track-color, var(--colors-info-main)), var(--track-color, var(--colors-info-main)))'
-            }
-        }
-    });
-});
-define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijstech/components", "@scom/scom-media-player/common/index.css.ts"], function (require, exports, components_3, index_css_1) {
+define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijstech/components", "@scom/scom-media-player/common/index.css.ts"], function (require, exports, components_4, index_css_2) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ScomMediaPlayerPlayer = void 0;
-    const Theme = components_3.Styles.Theme.ThemeVars;
+    const Theme = components_4.Styles.Theme.ThemeVars;
     const DEFAULT_SKIP_TIME = 10;
-    let ScomMediaPlayerPlayer = class ScomMediaPlayerPlayer extends components_3.Module {
+    let ScomMediaPlayerPlayer = class ScomMediaPlayerPlayer extends components_4.Module {
         constructor(parent, options) {
             super(parent, options);
             this.isRepeat = false;
+            this.isShuffle = false;
             this.timeUpdateHandler = this.timeUpdateHandler.bind(this);
             this.updateDuration = this.updateDuration.bind(this);
             this.endedHandler = this.endedHandler.bind(this);
@@ -193,14 +264,16 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
             this._data = { ...data };
         }
         endedHandler() {
-            this.iconPlay.name = 'play-circle';
+            this.player.currentTime(0);
+            navigator.mediaSession.playbackState = 'none';
             if (this.isRepeat) {
                 this.player.play();
-                this.iconPlay.name = 'pause-circle';
+            }
+            else if (this.isShuffle) {
+                this.playRandomTrack();
             }
             else {
                 this.playNextTrack();
-                this.iconPlay.name = 'pause-circle';
             }
         }
         timeUpdateHandler() {
@@ -208,30 +281,29 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
             if (this.trackRange)
                 this.trackRange.value = currentTime;
             if (this.lblStart)
-                this.lblStart.caption = (0, components_3.moment)(currentTime).format('mm:ss');
+                this.lblStart.caption = (0, components_4.moment)(currentTime).format('mm:ss');
             this.updatePositionState();
         }
         playTrack(track) {
-            if (this.track?.uri && this.track.uri === track.uri) {
+            const currentSrc = this.player.currentSrc();
+            if (currentSrc && currentSrc === track.uri) {
                 this.togglePlay();
             }
             else {
-                if (!this.player.paused())
-                    this.player.pause();
+                // if (!this.player?.paused()) this.player.pause();
+                this.player.reset();
                 this.track = { ...track };
                 const type = this.getTrackType(track.uri);
                 const src = this.getTrackSrc(track.uri);
                 this.player.src({ src, type });
+                this.renderTrack();
                 this.playHandler();
             }
         }
         playHandler() {
             const self = this;
-            this.player.ready(async function () {
-                self.renderTrack();
-                self.updateMetadata();
-                await self.player.play();
-                self.updatePositionState();
+            this.player.ready(function () {
+                self.player.play();
             });
         }
         updateMetadata() {
@@ -267,9 +339,15 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
             this.imgTrack.url = this.track?.poster || '';
             this.lblArtist.caption = this.track?.artist || 'No name';
             this.lblTrack.caption = this.track?.title || 'No title';
+            const parentWidth = this.lblTrack?.parentElement?.offsetWidth || 0;
+            if (parentWidth && parentWidth < this.lblTrack.offsetWidth) {
+                this.lblTrack.classList.add('marquee');
+            }
+            else {
+                this.lblTrack.classList.remove('marquee');
+            }
         }
         updateDuration() {
-            this.updatePositionState();
             const durationValue = this.player?.duration() || this.track?.duration || 0;
             const duration = durationValue * 1000;
             this.lblEnd.caption = '00:00';
@@ -278,19 +356,17 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
             this.pnlRange.clearInnerHTML();
             this.trackRange = this.$render("i-range", { min: 0, max: duration, value: 0, step: 1, width: '100%', onChanged: () => {
                     this.player.currentTime(this.trackRange.value / 1000);
-                    this.lblStart.caption = (0, components_3.moment)(this.trackRange.value).format('mm:ss');
-                }, class: index_css_1.customRangeStyle });
+                    this.lblStart.caption = (0, components_4.moment)(this.trackRange.value).format('mm:ss');
+                }, class: index_css_2.customRangeStyle });
             this.pnlRange.appendChild(this.trackRange);
-            this.lblEnd.caption = (0, components_3.moment)(duration).format('mm:ss');
+            this.lblEnd.caption = (0, components_4.moment)(duration).format('mm:ss');
         }
         togglePlay() {
             if (this.player.paused()) {
                 this.player.play();
-                this.iconPlay.name = 'pause-circle';
             }
             else {
                 this.player.pause();
-                this.iconPlay.name = 'play-circle';
             }
         }
         playNextTrack() {
@@ -301,6 +377,10 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
             if (this.onPrev)
                 this.onPrev();
         }
+        playRandomTrack() {
+            if (this.onRandom)
+                this.onRandom();
+        }
         onPlay() {
             if (this.track)
                 this.playTrack(this.track);
@@ -310,6 +390,8 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
             this.iconRepeat.fill = this.isRepeat ? Theme.colors.success.main : Theme.text.primary;
         }
         onShuffle() {
+            this.isShuffle = !this.isShuffle;
+            this.iconShuffle.fill = this.isShuffle ? Theme.colors.success.main : Theme.text.primary;
         }
         resizeLayout(mobile) {
         }
@@ -317,6 +399,7 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
             super.init();
             this.onNext = this.getAttribute('onNext', true) || this.onNext;
             this.onPrev = this.getAttribute('onPrev', true) || this.onPrev;
+            this.onRandom = this.getAttribute('onRandom', true) || this.onRandom;
             this.onStateChanged = this.getAttribute('onStateChanged', true) || this.onStateChanged;
             const track = this.getAttribute('track', true);
             const url = this.getAttribute('url', true);
@@ -326,7 +409,11 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
             if (this.player) {
                 this.player.ready(function () {
                     self.player.on('timeupdate', self.timeUpdateHandler);
-                    self.player.on('loadedmetadata', self.updateDuration);
+                    self.player.on('loadeddata', () => {
+                        self.updateDuration();
+                        self.updateMetadata();
+                        self.updatePositionState();
+                    });
                     self.player.on('ended', self.endedHandler);
                     self.player.on('play', function () {
                         navigator.mediaSession.playbackState = 'playing';
@@ -348,6 +435,7 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
             if ("mediaSession" in navigator) {
                 const self = this;
                 const player = this.player;
+                navigator.mediaSession.setPositionState(null);
                 navigator.mediaSession.setActionHandler("play", () => {
                     player.play();
                     navigator.mediaSession.playbackState = "playing";
@@ -386,7 +474,7 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
             return (this.$render("i-panel", { id: "playerWrapper", width: "100%", height: '100%', background: { color: Theme.background.paper } },
                 this.$render("i-grid-layout", { id: "playerGrid", gap: { row: '1rem', column: '0px' }, width: "100%", height: '100%', padding: { top: '1rem', bottom: '1rem', left: '1rem', right: '1rem' }, templateRows: ['auto'], templateColumns: ['1fr'], verticalAlignment: 'center' },
                     this.$render("i-image", { id: "imgTrack", width: '13rem', height: 'auto', minHeight: '6.25rem', margin: { left: 'auto', right: 'auto' }, display: 'block', background: { color: Theme.background.default } }),
-                    this.$render("i-video", { id: "video", isStreaming: true, visible: false, url: "https://video.ijs.dev/3210752f-56a4-11ed-80cd-0242ac120003/index.m3u8" }),
+                    this.$render("i-video", { id: "video", isStreaming: true, visible: false }),
                     this.$render("i-hstack", { id: "pnlInfo", horizontalAlignment: 'space-between', verticalAlignment: 'center', margin: { top: '1rem', bottom: '1rem' }, width: '100%', overflow: 'hidden', mediaQueries: [
                             {
                                 maxWidth: '767px',
@@ -396,7 +484,8 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
                             }
                         ] },
                         this.$render("i-vstack", { gap: "0.25rem", verticalAlignment: 'center', maxWidth: '100%' },
-                            this.$render("i-label", { id: "lblTrack", caption: '', font: { weight: 600, size: 'clamp(1rem, 0.95rem + 0.25vw, 1.25rem)' }, lineHeight: '1.375rem', maxWidth: '100%', textOverflow: 'ellipsis' }),
+                            this.$render("i-panel", { maxWidth: '100%', overflow: 'hidden' },
+                                this.$render("i-label", { id: "lblTrack", caption: '', font: { weight: 600, size: 'clamp(1rem, 0.95rem + 0.25vw, 1.25rem)' }, lineHeight: '1.375rem', class: index_css_2.marqueeStyle })),
                             this.$render("i-label", { id: "lblArtist", caption: '', maxWidth: '100%', textOverflow: 'ellipsis', font: { size: 'clamp(0.75rem, 0.7rem + 0.25vw, 1rem)' } }))),
                     this.$render("i-vstack", { id: "pnlTimeline", width: '100%' },
                         this.$render("i-panel", { id: "pnlRange", stack: { 'grow': '1', 'shrink': '1' } }),
@@ -411,25 +500,9 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
                                 }
                             }
                         ] },
-                        this.$render("i-panel", { id: "pnlRandom", cursor: 'pointer', hover: { opacity: 0.5 }, 
-                            // mediaQueries={[
-                            //   {
-                            //     maxWidth: '767px',
-                            //     properties: {visible: false, maxWidth: '100%'}
-                            //   }
-                            // ]}
-                            onClick: () => this.onShuffle() },
-                            this.$render("i-icon", { name: "random", width: '1rem', height: '1rem', fill: Theme.text.primary })),
-                        this.$render("i-grid-layout", { verticalAlignment: "stretch", columnsPerRow: 3, height: '2.5rem', border: { radius: '0.25rem', width: '1px', style: 'solid', color: Theme.divider }, 
-                            // mediaQueries={[
-                            //   {
-                            //     maxWidth: '767px',
-                            //     properties: {
-                            //       border: {radius: '0px', width: '1px', style: 'none', color: Theme.divider}
-                            //     }
-                            //   }
-                            // ]}
-                            stack: { grow: '1', shrink: '1' } },
+                        this.$render("i-panel", { id: "pnlRandom", cursor: 'pointer', hover: { opacity: 0.5 }, onClick: () => this.onShuffle() },
+                            this.$render("i-icon", { id: "iconShuffle", name: "random", width: '1rem', height: '1rem', fill: Theme.text.primary })),
+                        this.$render("i-grid-layout", { verticalAlignment: "stretch", columnsPerRow: 3, height: '2.5rem', border: { radius: '0.25rem', width: '1px', style: 'solid', color: Theme.divider }, stack: { grow: '1', shrink: '1' } },
                             this.$render("i-vstack", { verticalAlignment: 'center', horizontalAlignment: 'center', cursor: 'pointer', hover: { opacity: 0.5 }, onClick: () => this.playPrevTrack() },
                                 this.$render("i-icon", { name: "step-backward", width: '1rem', height: '1rem', fill: Theme.text.primary })),
                             this.$render("i-vstack", { verticalAlignment: 'center', horizontalAlignment: 'center', cursor: 'pointer', hover: { opacity: 0.5 }, onClick: () => this.onPlay() },
@@ -441,7 +514,7 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
         }
     };
     ScomMediaPlayerPlayer = __decorate([
-        (0, components_3.customElements)('i-scom-media-player--player')
+        (0, components_4.customElements)('i-scom-media-player--player')
     ], ScomMediaPlayerPlayer);
     exports.ScomMediaPlayerPlayer = ScomMediaPlayerPlayer;
 });
@@ -452,18 +525,18 @@ define("@scom/scom-media-player/common/index.ts", ["require", "exports", "@scom/
     Object.defineProperty(exports, "ScomMediaPlayerPlaylist", { enumerable: true, get: function () { return playList_1.ScomMediaPlayerPlaylist; } });
     Object.defineProperty(exports, "ScomMediaPlayerPlayer", { enumerable: true, get: function () { return player_1.ScomMediaPlayerPlayer; } });
 });
-define("@scom/scom-media-player/index.css.ts", ["require", "exports", "@ijstech/components"], function (require, exports, components_4) {
+define("@scom/scom-media-player/index.css.ts", ["require", "exports", "@ijstech/components"], function (require, exports, components_5) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.customScrollStyle = exports.customVideoStyle = void 0;
-    exports.customVideoStyle = components_4.Styles.style({
+    exports.customVideoStyle = components_5.Styles.style({
         $nest: {
             'i-video video': {
                 aspectRatio: '16 / 9'
             }
         }
     });
-    exports.customScrollStyle = components_4.Styles.style({
+    exports.customScrollStyle = components_5.Styles.style({
         $nest: {
             '&::-webkit-scrollbar-track': {
                 borderRadius: '4px',
@@ -481,34 +554,19 @@ define("@scom/scom-media-player/index.css.ts", ["require", "exports", "@ijstech/
         }
     });
 });
-define("@scom/scom-media-player/utils.ts", ["require", "exports"], function (require, exports) {
+define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", "@scom/scom-media-player/index.css.ts", "@scom/scom-media-player/utils.ts"], function (require, exports, components_6, index_css_3, utils_2) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.getPath = exports.isStreaming = void 0;
-    ///<amd-module name='@scom/scom-media-player/utils.ts'/> 
-    const isStreaming = (url) => {
-        const ext = url.split('.').pop();
-        return ext === 'm3u8' || ext === 'm3u';
-    };
-    exports.isStreaming = isStreaming;
-    const getPath = (url) => {
-        return url.split('/').slice(0, -1).join('/');
-    };
-    exports.getPath = getPath;
-});
-define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", "@scom/scom-media-player/index.css.ts", "@scom/scom-media-player/utils.ts"], function (require, exports, components_5, index_css_2, utils_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    const Theme = components_5.Styles.Theme.ThemeVars;
+    const Theme = components_6.Styles.Theme.ThemeVars;
     const reqs = ['m3u8-parser'];
-    components_5.RequireJS.config({
-        baseUrl: `${components_5.application.currentModuleDir}/lib`,
+    components_6.RequireJS.config({
+        baseUrl: `${components_6.application.currentModuleDir}/lib`,
         paths: {
             'm3u8-parser': 'm3u8-parser.min'
         }
     });
     const MAX_WIDTH = 700;
-    let ScomMediaPlayer = class ScomMediaPlayer extends components_5.Module {
+    let ScomMediaPlayer = class ScomMediaPlayer extends components_6.Module {
         constructor(parent, options) {
             super(parent, options);
             this.tag = {
@@ -518,6 +576,7 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
             this._theme = 'light';
             this._data = { url: '' };
             this.parsedData = {};
+            this.onPlay = this.onPlay.bind(this);
         }
         static async create(options, parent) {
             let self = new this(parent, options);
@@ -539,13 +598,13 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
         }
         async loadLib() {
             return new Promise((resolve, reject) => {
-                components_5.RequireJS.require(reqs, function (m3u8Parser) {
+                components_6.RequireJS.require(reqs, function (m3u8Parser) {
                     resolve(new m3u8Parser.Parser());
                 });
             });
         }
         async renderUI() {
-            if (!this.url || !(0, utils_1.isStreaming)(this.url))
+            if (!this.url || !(0, utils_2.isStreaming)(this.url))
                 return;
             if (!this.parser) {
                 this.parser = await this.loadLib();
@@ -615,7 +674,9 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
             if (!data)
                 return;
             this.player.playTrack(data);
-            this.player.visible = true;
+            if (!this.playerPanel.visible) {
+                this.playerPanel.visible = true;
+            }
         }
         onNext() {
             const tracks = this.playList.tracks;
@@ -628,6 +689,12 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
             const tracks = this.playList.tracks;
             const index = tracks.findIndex((track) => track.uri === this.player.track.uri);
             const newIndex = (((index + -1) % tracks.length) + tracks.length) % tracks.length;
+            this.playList.activeTrack = newIndex;
+            this.onPlay(tracks[newIndex]);
+        }
+        onRandom() {
+            const tracks = this.playList.tracks;
+            const newIndex = Math.floor(Math.random() * tracks.length);
             this.playList.activeTrack = newIndex;
             this.onPlay(tracks[newIndex]);
         }
@@ -766,7 +833,7 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
         }
         render() {
             return (this.$render("i-hstack", { maxHeight: '100dvh', height: "100%", overflow: 'hidden', background: { color: Theme.background.main } },
-                this.$render("i-video", { id: "videoEl", isStreaming: true, margin: { left: 'auto', right: 'auto' }, display: 'block', minWidth: '50%', url: "", stack: { grow: '1', shrink: '1' }, class: index_css_2.customVideoStyle, visible: false }),
+                this.$render("i-video", { id: "videoEl", isStreaming: true, margin: { left: 'auto', right: 'auto' }, display: 'block', minWidth: '50%', url: "", stack: { grow: '1', shrink: '1' }, class: index_css_3.customVideoStyle, visible: false }),
                 this.$render("i-grid-layout", { id: "playlistEl", position: 'relative', maxHeight: '100%', stack: { grow: '1', shrink: '1' }, templateColumns: ['repeat(2, 1fr)'], gap: { column: '0px', row: '0.75rem' }, mediaQueries: [
                         {
                             maxWidth: '767px',
@@ -776,8 +843,8 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
                             }
                         }
                     ] },
-                    this.$render("i-scom-media-player--playlist", { id: "playList", display: 'block', padding: { left: '1rem', right: '1rem' }, width: '100%', height: '100%', overflow: { y: 'auto' }, grid: { area: 'playlist' }, class: index_css_2.customScrollStyle, onItemClicked: this.onPlay }),
-                    this.$render("i-panel", { id: "playerPanel", padding: { top: '1rem', bottom: '1rem', left: '2.5rem', right: '2.5rem' }, width: '100%', height: '100%', grid: { area: 'player' }, mediaQueries: [
+                    this.$render("i-scom-media-player--playlist", { id: "playList", display: 'block', padding: { left: '1rem', right: '1rem' }, width: '100%', height: '100%', overflow: { y: 'auto' }, grid: { area: 'playlist' }, class: index_css_3.customScrollStyle, onItemClicked: this.onPlay }),
+                    this.$render("i-panel", { id: "playerPanel", padding: { top: '1rem', bottom: '1rem', left: '2.5rem', right: '2.5rem' }, width: '100%', height: '100%', grid: { area: 'player' }, visible: false, mediaQueries: [
                             {
                                 maxWidth: '767px',
                                 properties: {
@@ -792,12 +859,12 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
                                 }
                             }
                         ] },
-                        this.$render("i-scom-media-player--player", { id: "player", display: 'block', width: '100%', height: '100%', background: { color: Theme.background.paper }, visible: false, onNext: this.onNext, onPrev: this.onPrev, onStateChanged: this.onStateChanged })))));
+                        this.$render("i-scom-media-player--player", { id: "player", display: 'block', width: '100%', height: '100%', background: { color: Theme.background.paper }, onNext: this.onNext, onPrev: this.onPrev, onRandom: this.onRandom, onStateChanged: this.onStateChanged })))));
         }
     };
     ScomMediaPlayer = __decorate([
-        components_5.customModule,
-        (0, components_5.customElements)('i-scom-media-player')
+        components_6.customModule,
+        (0, components_6.customElements)('i-scom-media-player')
     ], ScomMediaPlayer);
     exports.default = ScomMediaPlayer;
 });

@@ -15,7 +15,7 @@ import {
 import { ScomMediaPlayerPlayer, ScomMediaPlayerPlaylist } from './common/index'
 import { ITrack } from './inteface'
 import { customScrollStyle, customVideoStyle } from './index.css'
-import { getPath, isStreaming } from './utils';
+import { isStreaming } from './utils';
 
 const Theme = Styles.Theme.ThemeVars;
 
@@ -64,6 +64,7 @@ export default class ScomMediaPlayer extends Module {
 
   constructor(parent?: Container, options?: any) {
     super(parent, options);
+    this.onPlay = this.onPlay.bind(this);
   }
 
   static async create(options?: ScomMediaPlayerElement, parent?: Container) {
@@ -167,7 +168,9 @@ export default class ScomMediaPlayer extends Module {
   private onPlay(data: ITrack) {
     if (!data) return;
     this.player.playTrack(data);
-    this.player.visible = true;
+    if (!this.playerPanel.visible) {
+      this.playerPanel.visible = true;
+    }
   }
 
   private onNext() {
@@ -182,6 +185,13 @@ export default class ScomMediaPlayer extends Module {
     const tracks = this.playList.tracks;
     const index = tracks.findIndex((track: ITrack) => track.uri === this.player.track.uri);
     const newIndex = (((index + -1) % tracks.length) + tracks.length) % tracks.length;
+    this.playList.activeTrack = newIndex;
+    this.onPlay(tracks[newIndex])
+  }
+
+  private onRandom() {
+    const tracks = this.playList.tracks;
+    const newIndex = Math.floor(Math.random() * tracks.length);
     this.playList.activeTrack = newIndex;
     this.onPlay(tracks[newIndex])
   }
@@ -378,6 +388,7 @@ export default class ScomMediaPlayer extends Module {
             padding={{top: '1rem', bottom: '1rem', left: '2.5rem', right: '2.5rem'}}
             width={'100%'} height={'100%'}
             grid={{area: 'player'}}
+            visible={false}
             mediaQueries={[
               {
                 maxWidth: '767px',
@@ -399,9 +410,9 @@ export default class ScomMediaPlayer extends Module {
               display='block'
               width={'100%'} height={'100%'}
               background={{color: Theme.background.paper}}
-              visible={false}
               onNext={this.onNext}
               onPrev={this.onPrev}
+              onRandom={this.onRandom}
               onStateChanged={this.onStateChanged}
             />
           </i-panel>
