@@ -1,13 +1,5 @@
 import { Styles } from "@ijstech/components";
 
-export const customVideoStyle = Styles.style({
-  $nest: {
-    'i-video video': {
-      aspectRatio: '16 / 9'
-    }
-  }
-})
-
 export const customScrollStyle = Styles.style({
   $nest: {
     '&::-webkit-scrollbar-track': {

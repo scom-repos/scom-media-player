@@ -58,3 +58,11 @@ export const trackStyle = Styles.style({
     }
   }
 })
+
+export const customVideoStyle = Styles.style({
+  $nest: {
+    'i-video video': {
+      aspectRatio: '16 / 9'
+    }
+  }
+})
