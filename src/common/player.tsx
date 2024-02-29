@@ -10,18 +10,21 @@ import {
   Range,
   Panel,
   moment,
-  Video
+  Video,
+  Control,
+  GridLayout
 } from '@ijstech/components';
 import { ITrack } from '../inteface';
-import { customRangeStyle, marqueeStyle } from './index.css';
+import { customRangeStyle, marqueeStyle, customVideoStyle } from './index.css';
 const Theme = Styles.Theme.ThemeVars;
 
 type callbackType = () => void;
 type changedCallbackType = (value: boolean) => void;
+type MediaType = 'video' | 'playlist';
 
 interface ScomMediaPlayerPlayerElement extends ControlElement {
-  track?: ITrack;
   url?: string;
+  type?: MediaType;
   onNext?: callbackType;
   onPrev?: callbackType;
   onRandom?: callbackType;
@@ -37,8 +40,8 @@ declare global {
 }
 
 interface IPlayer {
-  track?: ITrack;
-  url?: string;
+  url: string;
+  type: MediaType;
 }
 
 const DEFAULT_SKIP_TIME = 10;
@@ -57,10 +60,15 @@ export class ScomMediaPlayerPlayer extends Module {
   private lblStart: Label;
   private lblEnd: Label;
   private pnlRange: Panel;
+  private playerGrid: GridLayout;
 
-  private _data: IPlayer;
+  private _data: IPlayer = {
+    url: '',
+    type: 'playlist'
+  };
   private isRepeat: boolean = false;
   private isShuffle: boolean = false;
+  private currentTrack: ITrack|null = null;
 
   onNext: callbackType;
   onPrev: callbackType;
@@ -72,6 +80,9 @@ export class ScomMediaPlayerPlayer extends Module {
     this.timeUpdateHandler = this.timeUpdateHandler.bind(this);
     this.updateDuration = this.updateDuration.bind(this);
     this.endedHandler = this.endedHandler.bind(this);
+    this.playHandler = this.playHandler.bind(this);
+    this.pauseHandler = this.pauseHandler.bind(this);
+    this.playingHandler = this.playingHandler.bind(this);
     this.onPlay = this.onPlay.bind(this);
   }
 
@@ -81,13 +92,6 @@ export class ScomMediaPlayerPlayer extends Module {
     return self;
   }
 
-  get track() {
-    return this._data.track;
-  }
-  set track(value: ITrack) {
-    this._data.track = value;
-  }
-
   get url() {
     return this._data.url ?? '';
   }
@@ -95,71 +99,72 @@ export class ScomMediaPlayerPlayer extends Module {
     this._data.url = value ?? '';
   }
 
-  setData(data: IPlayer) {
-    this._data = {...data};
+  get type() {
+    return this._data.type ?? 'playlist';
+  }
+  set type(value: MediaType) {
+    this._data.type = value ?? 'playlist';
   }
 
-  private endedHandler() {
-    this.player.currentTime(0);
-    navigator.mediaSession.playbackState = 'none';
-    if (this.isRepeat) {
-      this.player.play();
-    } else if (this.isShuffle) {
-      this.playRandomTrack();
+  get track() {
+    return this.currentTrack;
+  }
+
+  setData(data: IPlayer) {
+    this._data = {...data};
+    this.renderUI();
+  }
+
+  private renderUI() {
+    if (this.type === 'video') {
+      this.video.visible = true;
+      this.playerGrid.visible = false;
+      this.video.url = this.url;
     } else {
-      this.playNextTrack();
+      this.video.visible = false;
+      this.playerGrid.visible = true;
     }
   }
 
-  private timeUpdateHandler() {
-    const currentTime = this.player.currentTime() * 1000;
-    if (this.trackRange) this.trackRange.value = currentTime;
-    if (this.lblStart) this.lblStart.caption = moment(currentTime).format('mm:ss');
-    this.updatePositionState();
+  clear() {
+    if (this.player) {
+      this.player.currentTime(0);
+      this.player.pause();
+    }
+  }
+
+  pause() {
+    if (this.player && !this.player.paused()) {
+      this.player.pause();
+    }
   }
 
   playTrack(track: ITrack) {
     if (!track) return;
-    const currentSrc = this.player.currentSrc();
+    const currentSrc = this.player?.currentSrc();
     if (currentSrc && currentSrc === track.uri) {
       this.togglePlay();
     } else {
-      this.track = {...track};
+      this.player.pause();
+      this.currentTrack = {...track};
       const type = this.getTrackType(track.uri);
       const src = this.getTrackSrc(track.uri);
       this.player.src({src, type});
       this.renderTrack();
-      const self = this;
       this.player.ready(function() {
-        self.player.play().then(() => {
-          self.player.pause();
-          self.player.play();
+        this.play().then(() => {
+          this.pause();
+          this.play();
         })
       });
     }
   }
 
-  private updateMetadata() {
-    const { title = 'No title', artist = 'No name', poster = '', uri } = this.track || {};
-    if (!uri) return;
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title,
-      artist,
-      album: '',
-      artwork: poster ? [{src: poster}] : []
-    });
-  }
-
-  private updatePositionState() {
-    if ('setPositionState' in navigator.mediaSession) {
-      const duration = this.player.duration() || 0;
-      const position = this.player.currentTime();
-      const playbackRate = this.player.playbackRate();
-      navigator.mediaSession.setPositionState({
-        duration,
-        playbackRate,
-        position
-      });
+  private togglePlay() {
+    if (this.player.paused()) {
+      this.player.play();
+    } else {
+      this.player.pause();
     }
   }
 
@@ -172,9 +177,10 @@ export class ScomMediaPlayerPlayer extends Module {
   }
 
   private renderTrack() {
-    this.imgTrack.url = this.track?.poster || '';
-    this.lblArtist.caption = this.track?.artist || 'No name';
-    this.lblTrack.caption = this.track?.title || 'No title';
+    const { title = 'No title', artist = 'No name', poster = ''} = this.currentTrack || {};
+    this.imgTrack.url = poster;
+    this.lblArtist.caption = artist;
+    this.lblTrack.caption = title;
     const parentWidth = this.lblTrack?.parentElement?.offsetWidth || 0;
     if (parentWidth && parentWidth < this.lblTrack.offsetWidth) {
       this.lblTrack.classList.add('marquee');
@@ -184,7 +190,8 @@ export class ScomMediaPlayerPlayer extends Module {
   }
 
   private updateDuration() {
-    const durationValue = this.player?.duration() || this.track?.duration || 0;
+    if (this.type === 'video') return;
+    const durationValue = this.player?.duration() || this.currentTrack?.duration || 0;
     const duration = durationValue * 1000;
     this.lblEnd.caption = '00:00';
     if (duration <= 0 || !Number.isFinite(duration)) return;
@@ -205,14 +212,6 @@ export class ScomMediaPlayerPlayer extends Module {
     this.lblEnd.caption = moment(duration).format('mm:ss');
   }
 
-  private togglePlay() {
-    if (this.player.paused()) {
-      this.player.play();
-    } else {
-      this.player.pause();
-    }
-  }
-
   private playNextTrack() {
     if (this.onNext) this.onNext();
   }
@@ -225,8 +224,10 @@ export class ScomMediaPlayerPlayer extends Module {
     if (this.onRandom) this.onRandom();
   }
 
-  private onPlay() {
-    this.playTrack(this.track);
+  private onPlay(target: Control, event: MouseEvent) {
+    event.stopPropagation();
+    event.preventDefault();
+    this.playTrack(this.currentTrack);
   }
 
   private onRepeat() {
@@ -239,8 +240,7 @@ export class ScomMediaPlayerPlayer extends Module {
     this.iconShuffle.fill = this.isShuffle ? Theme.colors.success.main : Theme.text.primary;
   }
 
-  resizeLayout(mobile: boolean) {
-  }
+  resizeLayout(mobile: boolean) {}
 
  async init() {
     super.init();
@@ -248,85 +248,166 @@ export class ScomMediaPlayerPlayer extends Module {
     this.onPrev = this.getAttribute('onPrev', true) || this.onPrev;
     this.onRandom = this.getAttribute('onRandom', true) || this.onRandom;
     this.onStateChanged = this.getAttribute('onStateChanged', true) || this.onStateChanged;
-    const track = this.getAttribute('track', true);
     const url = this.getAttribute('url', true);
-    this.setData({ track, url });
+    const type = this.getAttribute('type', true);
+    this.setData({ url, type });
     this.player = await this.video.getPlayer();
+    if (this.player) this.initEvents();
+  }
+
+  private initEvents() {
     const self = this;
-    if (this.player) {
-      this.player.ready(function() {
-        self.player.on('timeupdate', self.timeUpdateHandler);
-        self.player.on('loadeddata', () => {
-          self.updateDuration();
-          self.updateMetadata();
-          self.updatePositionState();
-        })
-        self.player.on('canplaythrough', () => {
-          self.initMediaSession();
-        });
-        self.player.on('ended', self.endedHandler);
-        self.player.on('play', function() {
-          navigator.mediaSession.playbackState = 'playing';
-          self.iconPlay.name = 'pause-circle';
-          if (self.onStateChanged) self.onStateChanged(true);
-        });
-        self.player.on('pause', function() {
-          navigator.mediaSession.playbackState = 'paused';
-          self.iconPlay.name = 'play-circle';
-          if (self.onStateChanged) self.onStateChanged(false);
-        });
-      })
+    this.player.ready(function() {
+      this.on('timeupdate', self.timeUpdateHandler);
+      this.on('loadeddata',self.updateDuration);
+      this.on('ended', self.endedHandler);
+      this.on('play', self.playHandler);
+      this.on('playing', self.playingHandler)
+      this.on('pause', self.pauseHandler);
+    })
+  }
+
+  private playHandler() {
+    const players = document.getElementsByTagName('i-scom-media-player--player');
+    const currentVideo = this.player.el().querySelector('video');
+    for (let i = 0; i < players.length; i++) {
+      const video = players[i].querySelector('video');
+      if (video.id !== currentVideo.id) {
+        (players[i] as ScomMediaPlayerPlayer).pause();
+      }
+    }
+    if (currentVideo.readyState) {
+      this.addMediaSessionEvents();
+      this.updateMetadata();
     }
   }
 
-  private initMediaSession() {
+  private playingHandler() {
+    navigator.mediaSession.playbackState = 'playing';
+    this.updateSessionData();
+    if (this.type === 'playlist') {
+      this.iconPlay.name = 'pause-circle';
+      if (this.onStateChanged) this.onStateChanged(true);
+    }
+  }
+
+  private pauseHandler() {
+    navigator.mediaSession.playbackState = 'paused';
+    this.updateSessionData();
+    if (this.type === 'playlist') {
+      this.iconPlay.name = 'play-circle';
+      if (this.onStateChanged) this.onStateChanged(false);
+    }
+  }
+
+  private endedHandler() {
+    this.player.currentTime(0);
+    navigator.mediaSession.playbackState = 'none';
+    if (this.type === 'video') return;
+    if (this.isRepeat) {
+      this.player.play();
+    } else if (this.isShuffle) {
+      this.playRandomTrack();
+    } else {
+      this.playNextTrack();
+    }
+  }
+
+  private timeUpdateHandler() {
+    this.updateSessionData();
+    if (this.type === 'video') return;
+    const currentTime = this.player.currentTime() * 1000;
+    if (this.trackRange) this.trackRange.value = currentTime;
+    if (this.lblStart) this.lblStart.caption = moment(currentTime).format('mm:ss');
+  }
+
+  private addMediaSessionEvents() {
+    const self = this;
     if ("mediaSession" in navigator) {
-      const self = this;
-      let player = this.player;
-      navigator.mediaSession.setActionHandler("play", async () => {
-        await player.play();
+      const mediaSession = navigator.mediaSession;
+      mediaSession.setActionHandler("play", async () => {
+        await self.player.play();
       });
 
-      navigator.mediaSession.setActionHandler("pause", () => {
-        player.pause();
+      mediaSession.setActionHandler("pause", () => {
+        self.player.pause();
       });
 
-      navigator.mediaSession.setActionHandler('previoustrack', function() {
-        self.playPrevTrack();
+      if (this.type === 'playlist') {
+        mediaSession.setActionHandler('previoustrack', function() {
+          self.playPrevTrack();
+        });
+        mediaSession.setActionHandler('nexttrack', function() {
+          self.playNextTrack();
+        });
+      } else {
+        mediaSession.setActionHandler('previoustrack', null);
+        mediaSession.setActionHandler('nexttrack', null);
+      }
+
+      mediaSession.setActionHandler("seekto", (details) => {
+        if (isNaN(self.player.duration())) {
+          return;
+        }
+        self.player.currentTime(details.seekTime);
       });
 
-      navigator.mediaSession.setActionHandler('nexttrack', function() {
-        self.playNextTrack();
-      });
-
-      // navigator.mediaSession.setActionHandler('seekbackward', function(event) {
+      // mediaSession.setActionHandler('seekbackward', function(event) {
       //   const skipTime = event.seekOffset || DEFAULT_SKIP_TIME;
       //   player.currentTime(Math.max(player.currentTime() - skipTime, 0));
       //   self.updatePositionState();
       // });
 
-      // navigator.mediaSession.setActionHandler('seekforward', function(event) {
+      // mediaSession.setActionHandler('seekforward', function(event) {
       //   const skipTime = event.seekOffset || DEFAULT_SKIP_TIME;
       //   player.currentTime(Math.min(player.currentTime() + skipTime, player.duration()));
       //   self.updatePositionState();
       // });
-
-      try {
-        navigator.mediaSession.setActionHandler('stop', function() {
-          if (!player.paused()) player.pause();
-          navigator.mediaSession.playbackState = "none";
-        });
-      } catch(error) {}
     }
+  }
+
+  private updateSessionData() {
+    if (isNaN(this.player.duration())) return;
+    const seekableLength = this.player.seekable().length;
+    if (seekableLength === 0) return;
+    navigator.mediaSession.setPositionState({
+      duration: Math.max(
+        this.player.seekable().end(seekableLength - 1),
+        this.player.currentTime()
+      ),
+      playbackRate: this.player.playbackRate(),
+      position: this.player.currentTime()
+    });
+    navigator.mediaSession.playbackState = this.player.paused() ? 'paused' : 'playing';
+  }
+
+  private updateMetadata() {
+    const { title = 'No title', artist = 'No name', poster = '' } = this.currentTrack || {};
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title,
+      artist,
+      album: '',
+      artwork: poster ? [{src: poster}] : []
+    });
   }
 
   render() {
     return (
-      <i-panel
+      <i-vstack
         id="playerWrapper"
         width="100%" height={'100%'}
         background={{color: Theme.background.paper}}
       >
+        <i-video
+          id="video"
+          isStreaming={true}
+          margin={{left: 'auto', right: 'auto'}}
+          display='block'
+          width={'100%'} height={'100%'}
+          stack={{grow: '1', shrink: '1'}}
+          class={customVideoStyle}
+          visible={false}
+        ></i-video>
         <i-grid-layout
           id="playerGrid"
           gap={{row: '1rem', column: '0px'}}
@@ -344,7 +425,6 @@ export class ScomMediaPlayerPlayer extends Module {
             display='block'
             background={{color: Theme.background.default}}
           ></i-image>
-          <i-video id="video" isStreaming={true} visible={false}></i-video>
           <i-hstack
             id="pnlInfo"
             horizontalAlignment='space-between'
@@ -485,7 +565,7 @@ export class ScomMediaPlayerPlayer extends Module {
             </i-panel>
           </i-hstack>
         </i-grid-layout>
-      </i-panel>
+      </i-vstack>
     )
   }
 }
