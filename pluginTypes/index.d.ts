@@ -124,6 +124,8 @@ declare module "@scom/scom-media-player/common/player.tsx" {
         private isRepeat;
         private isShuffle;
         private currentTrack;
+        private notUpdate;
+        private firstClick;
         onNext: callbackType;
         onPrev: callbackType;
         onRandom: callbackType;
@@ -149,6 +151,7 @@ declare module "@scom/scom-media-player/common/player.tsx" {
         private playPrevTrack;
         private playRandomTrack;
         private onPlay;
+        private pauseOthers;
         private onRepeat;
         private onShuffle;
         resizeLayout(mobile: boolean): void;
