@@ -28,10 +28,12 @@ export default class Module1 extends Module {
                 width={'100%'}
             ></i-scom-media-player>
             <i-scom-media-player
-                // url="https://playertest.longtailvideo.com/adaptive/alt-audio-no-video/sintel/playlist.m3u8"
-                // url="https://live-par-2-cdn-alt.livepush.io/live/bigbuckbunnyclip/index.m3u8"
                 url={assets.fullPath('img/playlist.m3u8')}
-                // url="https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8"
+                display='block'
+                width={'100%'}
+            ></i-scom-media-player>
+             <i-scom-media-player
+                url={assets.fullPath('img/new_playlist.m3u8')}
                 display='block'
                 width={'100%'}
             ></i-scom-media-player>

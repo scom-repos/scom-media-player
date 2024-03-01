@@ -251,6 +251,8 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
             this.isRepeat = false;
             this.isShuffle = false;
             this.currentTrack = null;
+            this.notUpdate = false;
+            this.firstClick = false;
             this.timeUpdateHandler = this.timeUpdateHandler.bind(this);
             this.updateDuration = this.updateDuration.bind(this);
             this.endedHandler = this.endedHandler.bind(this);
@@ -302,10 +304,12 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
         }
         pause() {
             if (this.player && !this.player.paused()) {
+                this.notUpdate = true;
                 this.player.pause();
             }
         }
         playTrack(track) {
+            this.pauseOthers();
             if (!track)
                 return;
             const currentSrc = this.player?.currentSrc();
@@ -319,10 +323,14 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
                 const src = this.getTrackSrc(track.uri);
                 this.player.src({ src, type });
                 this.renderTrack();
+                const self = this;
                 this.player.ready(function () {
                     this.play().then(() => {
-                        this.pause();
-                        this.play();
+                        if (!self.firstClick) {
+                            self.firstClick = true;
+                            this.pause();
+                            this.play();
+                        }
                     });
                 });
             }
@@ -387,6 +395,16 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
             event.preventDefault();
             this.playTrack(this.currentTrack);
         }
+        pauseOthers() {
+            const players = document.getElementsByTagName('i-scom-media-player--player');
+            const currentVideo = this.player.el().querySelector('video');
+            for (let i = 0; i < players.length; i++) {
+                const video = players[i].querySelector('video');
+                if (video.id !== currentVideo.id) {
+                    players[i].pause();
+                }
+            }
+        }
         onRepeat() {
             this.isRepeat = !this.isRepeat;
             this.iconRepeat.fill = this.isRepeat ? Theme.colors.success.main : Theme.text.primary;
@@ -421,18 +439,8 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
             });
         }
         playHandler() {
-            const players = document.getElementsByTagName('i-scom-media-player--player');
-            const currentVideo = this.player.el().querySelector('video');
-            for (let i = 0; i < players.length; i++) {
-                const video = players[i].querySelector('video');
-                if (video.id !== currentVideo.id) {
-                    players[i].pause();
-                }
-            }
-            if (currentVideo.readyState) {
-                this.addMediaSessionEvents();
-                this.updateMetadata();
-            }
+            this.updateMetadata();
+            this.addMediaSessionEvents();
         }
         playingHandler() {
             navigator.mediaSession.playbackState = 'playing';
@@ -444,8 +452,11 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
             }
         }
         pauseHandler() {
-            navigator.mediaSession.playbackState = 'paused';
-            this.updateSessionData();
+            if (!this.notUpdate) {
+                navigator.mediaSession.playbackState = 'paused';
+                this.updateSessionData();
+            }
+            this.notUpdate = false;
             if (this.type === 'playlist') {
                 this.iconPlay.name = 'play-circle';
                 if (this.onStateChanged)
@@ -528,7 +539,6 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
                 playbackRate: this.player.playbackRate(),
                 position: this.player.currentTime()
             });
-            navigator.mediaSession.playbackState = this.player.paused() ? 'paused' : 'playing';
         }
         updateMetadata() {
             const { title = 'No title', artist = 'No name', poster = '' } = this.currentTrack || {};

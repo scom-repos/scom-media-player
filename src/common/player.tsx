@@ -69,6 +69,8 @@ export class ScomMediaPlayerPlayer extends Module {
   private isRepeat: boolean = false;
   private isShuffle: boolean = false;
   private currentTrack: ITrack|null = null;
+  private notUpdate: boolean = false;
+  private firstClick: boolean = false;
 
   onNext: callbackType;
   onPrev: callbackType;
@@ -135,11 +137,13 @@ export class ScomMediaPlayerPlayer extends Module {
 
   pause() {
     if (this.player && !this.player.paused()) {
+      this.notUpdate = true;
       this.player.pause();
     }
   }
 
   playTrack(track: ITrack) {
+    this.pauseOthers();
     if (!track) return;
     const currentSrc = this.player?.currentSrc();
     if (currentSrc && currentSrc === track.uri) {
@@ -151,10 +155,14 @@ export class ScomMediaPlayerPlayer extends Module {
       const src = this.getTrackSrc(track.uri);
       this.player.src({src, type});
       this.renderTrack();
+      const self = this;
       this.player.ready(function() {
         this.play().then(() => {
-          this.pause();
-          this.play();
+          if (!self.firstClick) {
+            self.firstClick = true;
+            this.pause();
+            this.play();
+          }
         })
       });
     }
@@ -230,6 +238,17 @@ export class ScomMediaPlayerPlayer extends Module {
     this.playTrack(this.currentTrack);
   }
 
+  private pauseOthers() {
+    const players = document.getElementsByTagName('i-scom-media-player--player');
+    const currentVideo = this.player.el().querySelector('video');
+    for (let i = 0; i < players.length; i++) {
+      const video = players[i].querySelector('video');
+      if (video.id !== currentVideo.id) {
+        (players[i] as ScomMediaPlayerPlayer).pause();
+      }
+    }
+  }
+
   private onRepeat() {
     this.isRepeat = !this.isRepeat;
     this.iconRepeat.fill = this.isRepeat ? Theme.colors.success.main : Theme.text.primary;
@@ -259,7 +278,7 @@ export class ScomMediaPlayerPlayer extends Module {
     const self = this;
     this.player.ready(function() {
       this.on('timeupdate', self.timeUpdateHandler);
-      this.on('loadeddata',self.updateDuration);
+      this.on('loadeddata', self.updateDuration);
       this.on('ended', self.endedHandler);
       this.on('play', self.playHandler);
       this.on('playing', self.playingHandler)
@@ -268,18 +287,8 @@ export class ScomMediaPlayerPlayer extends Module {
   }
 
   private playHandler() {
-    const players = document.getElementsByTagName('i-scom-media-player--player');
-    const currentVideo = this.player.el().querySelector('video');
-    for (let i = 0; i < players.length; i++) {
-      const video = players[i].querySelector('video');
-      if (video.id !== currentVideo.id) {
-        (players[i] as ScomMediaPlayerPlayer).pause();
-      }
-    }
-    if (currentVideo.readyState) {
-      this.addMediaSessionEvents();
-      this.updateMetadata();
-    }
+    this.updateMetadata();
+    this.addMediaSessionEvents();
   }
 
   private playingHandler() {
@@ -292,8 +301,11 @@ export class ScomMediaPlayerPlayer extends Module {
   }
 
   private pauseHandler() {
-    navigator.mediaSession.playbackState = 'paused';
-    this.updateSessionData();
+    if (!this.notUpdate) {
+      navigator.mediaSession.playbackState = 'paused';
+      this.updateSessionData();
+    }
+    this.notUpdate = false;
     if (this.type === 'playlist') {
       this.iconPlay.name = 'play-circle';
       if (this.onStateChanged) this.onStateChanged(false);
@@ -378,7 +390,6 @@ export class ScomMediaPlayerPlayer extends Module {
       playbackRate: this.player.playbackRate(),
       position: this.player.currentTime()
     });
-    navigator.mediaSession.playbackState = this.player.paused() ? 'paused' : 'playing';
   }
 
   private updateMetadata() {
