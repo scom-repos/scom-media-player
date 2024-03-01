@@ -16,6 +16,7 @@ declare module "@scom/scom-media-player/common/index.css.ts" {
     export const customRangeStyle: string;
     export const marqueeStyle: string;
     export const trackStyle: string;
+    export const customVideoStyle: string;
 }
 /// <amd-module name="@scom/scom-media-player/utils.ts" />
 declare module "@scom/scom-media-player/utils.ts" {
@@ -85,9 +86,10 @@ declare module "@scom/scom-media-player/common/player.tsx" {
     import { ITrack } from "@scom/scom-media-player/inteface.ts";
     type callbackType = () => void;
     type changedCallbackType = (value: boolean) => void;
+    type MediaType = 'video' | 'playlist';
     interface ScomMediaPlayerPlayerElement extends ControlElement {
-        track?: ITrack;
         url?: string;
+        type?: MediaType;
         onNext?: callbackType;
         onPrev?: callbackType;
         onRandom?: callbackType;
@@ -101,8 +103,8 @@ declare module "@scom/scom-media-player/common/player.tsx" {
         }
     }
     interface IPlayer {
-        track?: ITrack;
-        url?: string;
+        url: string;
+        type: MediaType;
     }
     export class ScomMediaPlayerPlayer extends Module {
         private player;
@@ -117,39 +119,52 @@ declare module "@scom/scom-media-player/common/player.tsx" {
         private lblStart;
         private lblEnd;
         private pnlRange;
+        private playerGrid;
         private _data;
         private isRepeat;
         private isShuffle;
+        private currentTrack;
+        private notUpdate;
+        private firstClick;
         onNext: callbackType;
         onPrev: callbackType;
         onRandom: callbackType;
         onStateChanged: changedCallbackType;
         constructor(parent?: Container, options?: any);
         static create(options?: ScomMediaPlayerPlayerElement, parent?: Container): Promise<ScomMediaPlayerPlayer>;
-        get track(): ITrack;
-        set track(value: ITrack);
         get url(): string;
         set url(value: string);
+        get type(): MediaType;
+        set type(value: MediaType);
+        get track(): ITrack;
         setData(data: IPlayer): void;
-        private endedHandler;
-        private timeUpdateHandler;
+        private renderUI;
+        clear(): void;
+        pause(): void;
         playTrack(track: ITrack): void;
-        private updateMetadata;
-        private updatePositionState;
+        private togglePlay;
         private getTrackType;
         private getTrackSrc;
         private renderTrack;
         private updateDuration;
-        private togglePlay;
         private playNextTrack;
         private playPrevTrack;
         private playRandomTrack;
         private onPlay;
+        private pauseOthers;
         private onRepeat;
         private onShuffle;
         resizeLayout(mobile: boolean): void;
         init(): Promise<void>;
-        private initMediaSession;
+        private initEvents;
+        private playHandler;
+        private playingHandler;
+        private pauseHandler;
+        private endedHandler;
+        private timeUpdateHandler;
+        private addMediaSessionEvents;
+        private updateSessionData;
+        private updateMetadata;
         render(): any;
     }
 }
@@ -160,7 +175,6 @@ declare module "@scom/scom-media-player/common/index.ts" {
 }
 /// <amd-module name="@scom/scom-media-player/index.css.ts" />
 declare module "@scom/scom-media-player/index.css.ts" {
-    export const customVideoStyle: string;
     export const customScrollStyle: string;
 }
 /// <amd-module name="@scom/scom-media-player" />
@@ -179,13 +193,13 @@ declare module "@scom/scom-media-player" {
     export default class ScomMediaPlayer extends Module {
         private playList;
         private player;
-        private videoEl;
         private playlistEl;
         private playerPanel;
         private parser;
         tag: any;
         private _theme;
         private _data;
+        private isVideo;
         private parsedData;
         constructor(parent?: Container, options?: any);
         static create(options?: ScomMediaPlayerElement, parent?: Container): Promise<ScomMediaPlayer>;
@@ -199,6 +213,7 @@ declare module "@scom/scom-media-player" {
         private isEmptyObject;
         private renderVideo;
         private renderPlaylist;
+        onHide(): void;
         private onPlay;
         private onNext;
         private onPrev;

@@ -5,7 +5,6 @@ import {
   ControlElement,
   customElements,
   Styles,
-  Video,
   RequireJS,
   IDataSchema,
   application,
@@ -14,7 +13,7 @@ import {
 } from '@ijstech/components'
 import { ScomMediaPlayerPlayer, ScomMediaPlayerPlaylist } from './common/index'
 import { ITrack } from './inteface'
-import { customScrollStyle, customVideoStyle } from './index.css'
+import { customScrollStyle } from './index.css'
 import { isStreaming } from './utils';
 
 const Theme = Styles.Theme.ThemeVars;
@@ -49,7 +48,6 @@ declare global {
 export default class ScomMediaPlayer extends Module {
   private playList: ScomMediaPlayerPlaylist;
   private player: ScomMediaPlayerPlayer;
-  private videoEl: Video;
   private playlistEl: GridLayout;
   private playerPanel: Panel;
   private parser: any;
@@ -60,6 +58,7 @@ export default class ScomMediaPlayer extends Module {
   }
   private _theme: string = 'light';
   private _data: IMediaPlayer = { url: ''};
+  private isVideo: boolean = false;
   private parsedData: any = {};
 
   constructor(parent?: Container, options?: any) {
@@ -152,20 +151,36 @@ export default class ScomMediaPlayer extends Module {
   }
 
   private renderVideo() {
-    this.playlistEl.visible = false;
-    this.videoEl.visible = true;
-    this.videoEl.url = this.url;
+    this.isVideo = true;
+    this.playList.visible = false;
+    this.playerPanel.visible = true;
+    this.playlistEl.templateColumns = ['auto'];
+    this.playlistEl.templateAreas = [['player'], ['player']];
+    this.player.setData({
+      type: 'video',
+      url: this.url
+    })
   }
 
   private renderPlaylist(tracks: any[]) {
-    this.playlistEl.visible = true;
-    this.videoEl.visible = false;
+    this.isVideo = false;
+    this.playList.visible = true;
+    this.playerPanel.visible = false;
+    this.player.setData({
+      type: 'playlist',
+      url: this.url
+    })
     this.playList.setData({
       tracks,
       title: this.parsedData?.title || '',
       description: '',
       picture: ''
     });
+  }
+
+  onHide(): void {
+    this.player.clear();
+    // navigator.mediaSession.playbackState = 'none';
   }
 
   private onPlay(data: ITrack) {
@@ -311,6 +326,7 @@ export default class ScomMediaPlayer extends Module {
   }
 
   private resizeLayout() {
+    if (this.isVideo) return;
     if (this.offsetWidth <= 0) return;
     const tagWidth = Number(this.tag?.width);
     const hasSmallWidth = (this.offsetWidth !== 0 && this.offsetWidth < MAX_WIDTH) || (window as any).innerWidth < MAX_WIDTH || (!isNaN(tagWidth) && tagWidth !== 0 && tagWidth < MAX_WIDTH);
@@ -348,17 +364,6 @@ export default class ScomMediaPlayer extends Module {
         overflow={'hidden'}
         background={{color: Theme.background.main}}
       >
-        <i-video
-          id="videoEl"
-          isStreaming
-          margin={{left: 'auto', right: 'auto'}}
-          display='block'
-          minWidth={'50%'}
-          url=""
-          stack={{grow: '1', shrink: '1'}}
-          class={customVideoStyle}
-          visible={false}
-        ></i-video>
         <i-grid-layout
           id="playlistEl"
           position='relative'
