@@ -210,6 +210,7 @@ export class ScomMediaPlayerPlayer extends Module {
       value={0}
       step={1}
       width={'100%'}
+      onClick={(target: Control, event: Event) => event.stopPropagation()}
       onChanged={() => {
         this.player.currentTime(this.trackRange.value / 1000);
         this.lblStart.caption = moment(this.trackRange.value).format('mm:ss');

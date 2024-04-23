@@ -371,7 +371,7 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
             if (duration <= 0 || !Number.isFinite(duration))
                 return;
             this.pnlRange.clearInnerHTML();
-            this.trackRange = this.$render("i-range", { min: 0, max: duration, value: 0, step: 1, width: '100%', onChanged: () => {
+            this.trackRange = this.$render("i-range", { min: 0, max: duration, value: 0, step: 1, width: '100%', onClick: (target, event) => event.stopPropagation(), onChanged: () => {
                     this.player.currentTime(this.trackRange.value / 1000);
                     this.lblStart.caption = (0, components_4.moment)(this.trackRange.value).format('mm:ss');
                 }, class: index_css_2.customRangeStyle });
