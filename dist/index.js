@@ -631,12 +631,7 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
     Object.defineProperty(exports, "__esModule", { value: true });
     const Theme = components_6.Styles.Theme.ThemeVars;
     const reqs = ['m3u8-parser'];
-    components_6.RequireJS.config({
-        baseUrl: `${components_6.application.currentModuleDir}/lib`,
-        paths: {
-            'm3u8-parser': 'm3u8-parser.min'
-        }
-    });
+    const path = components_6.application.currentModuleDir;
     const MAX_WIDTH = 700;
     let ScomMediaPlayer = class ScomMediaPlayer extends components_6.Module {
         constructor(parent, options) {
@@ -673,7 +668,14 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
             return this._data;
         }
         async loadLib() {
+            const moduleDir = this['currentModuleDir'] || path;
             return new Promise((resolve, reject) => {
+                components_6.RequireJS.config({
+                    baseUrl: `${moduleDir}/lib`,
+                    paths: {
+                        'm3u8-parser': 'm3u8-parser.min'
+                    }
+                });
                 components_6.RequireJS.require(reqs, function (m3u8Parser) {
                     resolve(new m3u8Parser.Parser());
                 });
