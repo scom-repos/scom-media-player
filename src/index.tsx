@@ -27,12 +27,7 @@ interface IMediaPlayer {
 }
 
 const reqs = ['m3u8-parser'];
-RequireJS.config({
-  baseUrl: `${application.currentModuleDir}/lib`,
-  paths: {
-    'm3u8-parser': 'm3u8-parser.min'
-  }
-})
+const path = application.currentModuleDir;
 const MAX_WIDTH = 700;
 
 declare global {
@@ -92,7 +87,14 @@ export default class ScomMediaPlayer extends Module {
   }
 
   private async loadLib() {
+    const moduleDir = this['currentModuleDir'] || path;
     return new Promise((resolve, reject) => {
+      RequireJS.config({
+        baseUrl: `${moduleDir}/lib`,
+        paths: {
+          'm3u8-parser': 'm3u8-parser.min'
+        }
+      })
       RequireJS.require(reqs, function (m3u8Parser: any) {
         resolve(new m3u8Parser.Parser());
       });
