@@ -21,6 +21,7 @@ declare module "@scom/scom-media-player/common/index.css.ts" {
 /// <amd-module name="@scom/scom-media-player/utils.ts" />
 declare module "@scom/scom-media-player/utils.ts" {
     export const isStreaming: (url: string) => boolean;
+    export const isAudio: (url: string) => boolean;
     export const getPath: (url: string) => string;
     export const formatTime: (time: number | string) => string;
 }
@@ -86,7 +87,7 @@ declare module "@scom/scom-media-player/common/player.tsx" {
     import { ITrack } from "@scom/scom-media-player/inteface.ts";
     type callbackType = () => void;
     type changedCallbackType = (value: boolean) => void;
-    type MediaType = 'video' | 'playlist';
+    type MediaType = 'video' | 'playlist' | 'audio';
     interface ScomMediaPlayerPlayerElement extends ControlElement {
         url?: string;
         type?: MediaType;
@@ -120,12 +121,24 @@ declare module "@scom/scom-media-player/common/player.tsx" {
         private lblEnd;
         private pnlRange;
         private playerGrid;
+        private pnlPrevNext;
+        private pnlNext;
+        private pnlPrev;
+        private pnlRandom;
+        private pnlRepeat;
+        private pnlInfo;
+        private timeLineGrid;
+        private pnlMute;
+        private iconMute;
+        private sliderVolume;
+        private pnlControls;
         private _data;
         private isRepeat;
         private isShuffle;
         private currentTrack;
         private notUpdate;
         private firstClick;
+        private isMute;
         onNext: callbackType;
         onPrev: callbackType;
         onRandom: callbackType;
@@ -139,6 +152,7 @@ declare module "@scom/scom-media-player/common/player.tsx" {
         get track(): ITrack;
         setData(data: IPlayer): void;
         private renderUI;
+        private toggleUIs;
         clear(): void;
         pause(): void;
         playTrack(track: ITrack): void;
@@ -154,6 +168,8 @@ declare module "@scom/scom-media-player/common/player.tsx" {
         private pauseOthers;
         private onRepeat;
         private onShuffle;
+        private onMute;
+        private onVolume;
         resizeLayout(mobile: boolean): void;
         init(): Promise<void>;
         private initEvents;
@@ -209,6 +225,8 @@ declare module "@scom/scom-media-player" {
         private getData;
         private loadLib;
         private renderUI;
+        private renderStreamData;
+        private renderAudio;
         private checkParsedData;
         private isEmptyObject;
         private renderVideo;

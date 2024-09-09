@@ -5,6 +5,11 @@ export const isStreaming = (url: string) => {
   return ext === 'm3u8' || ext === 'm3u';
 }
 
+export const isAudio = (url: string) => {
+  const ext = url.split('.').pop();
+  return ['mp3', 'wav', 'ogg', 'm4a'].includes(ext);
+}
+
 export const getPath = (url: string) => {
   return url.split('/').slice(0, -1).join('/');
 }

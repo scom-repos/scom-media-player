@@ -33,7 +33,7 @@ export default class Module1 extends Module {
                 width={'100%'}
             ></i-scom-media-player>
              <i-scom-media-player
-                url={assets.fullPath('img/new_playlist.m3u8')}
+                url={'https://cdn1.suno.ai/850c09e6-0393-4476-a5b7-3a31a24d5641.mp3'}
                 display='block'
                 width={'100%'}
             ></i-scom-media-player>

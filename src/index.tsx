@@ -14,7 +14,7 @@ import {
 import { ScomMediaPlayerPlayer, ScomMediaPlayerPlaylist } from './common/index'
 import { ITrack } from './inteface'
 import { customScrollStyle } from './index.css'
-import { isStreaming } from './utils';
+import { isAudio, isStreaming } from './utils';
 
 const Theme = Styles.Theme.ThemeVars;
 
@@ -102,7 +102,15 @@ export default class ScomMediaPlayer extends Module {
   }
 
   private async renderUI() {
-    if (!this.url || !isStreaming(this.url)) return;
+    if (!this.url || (!isStreaming(this.url) && !isAudio(this.url))) return;
+    if (isAudio(this.url)) {
+      await this.renderAudio();
+    } else {
+      await this.renderStreamData();
+    }
+  }
+
+  private async renderStreamData() {
     if (!this.parser) {
       this.parser = await this.loadLib();
       this.parser.addParser({
@@ -121,13 +129,23 @@ export default class ScomMediaPlayer extends Module {
     this.parser.end();
     this.parsedData = this.parser.manifest;
     this.player.url = this.url;
-    console.log(this.parser.manifest)
     this.checkParsedData();
+  }
+
+  private async renderAudio() {
+    this.isVideo = true;
+    this.playList.visible = false;
+    this.playerPanel.visible = true;
+    this.playlistEl.templateColumns = ['auto'];
+    this.playlistEl.templateAreas = [['player'], ['player']];
+    this.player.setData({
+      type: 'audio',
+      url: this.url
+    })
   }
 
   private checkParsedData() {
     if (!this.parsedData) return;
-    // TODO: check
     const playlists = this.parsedData.playlists || [];
     const segments = this.parsedData.segments || [];
     const isStreamVideo = segments.every(segment => /\.ts$/.test(segment.uri || ''));
