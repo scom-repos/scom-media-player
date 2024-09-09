@@ -303,6 +303,7 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
                 this.playerGrid.visible = true;
                 this.playerGrid.direction = 'horizontal';
                 this.playerGrid.reverse = true;
+                this.playerGrid.padding = { left: '1rem', right: '1rem', top: '0.5rem', bottom: '0.5rem' };
                 this.pnlPrevNext.border = { style: 'none', width: 0 };
                 this.pnlPrevNext.stack = { grow: '0', shrink: '1' };
                 this.currentTrack = { uri: this.url, title: 'No title', artist: 'No name', poster: '' };
@@ -316,6 +317,7 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
                 this.playerGrid.visible = true;
                 this.playerGrid.direction = 'vertical';
                 this.playerGrid.reverse = false;
+                this.playerGrid.padding = { left: '1rem', right: '1rem', top: '1rem', bottom: '1rem' };
                 this.pnlPrevNext.border = { radius: '0.25rem', width: '1px', style: 'solid', color: Theme.divider };
                 this.pnlPrevNext.stack = { grow: '1', shrink: '1' };
                 this.timeLineGrid.templateAreas = [['range', 'range'], ['start', 'end']];
@@ -607,7 +609,7 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
             });
         }
         render() {
-            return (this.$render("i-vstack", { id: "playerWrapper", width: "100%", height: '100%', background: { color: Theme.background.paper } },
+            return (this.$render("i-vstack", { id: "playerWrapper", width: "100%", height: '100%', background: { color: Theme.background.paper }, border: { radius: 'inherit' } },
                 this.$render("i-video", { id: "video", isStreaming: true, margin: { left: 'auto', right: 'auto' }, display: 'block', width: '100%', height: '100%', stack: { grow: '1', shrink: '1' }, class: index_css_2.customVideoStyle, visible: false }),
                 this.$render("i-stack", { id: "playerGrid", direction: 'vertical', gap: "1rem", width: "100%", height: '100%', padding: { top: '1rem', bottom: '1rem', left: '1rem', right: '1rem' }, alignItems: 'center' },
                     this.$render("i-image", { id: "imgTrack", width: '13rem', height: 'auto', minHeight: '6.25rem', margin: { left: 'auto', right: 'auto' }, display: 'block', background: { color: Theme.background.default } }),
@@ -623,7 +625,7 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
                             this.$render("i-panel", { maxWidth: '100%', overflow: 'hidden' },
                                 this.$render("i-label", { id: "lblTrack", caption: '', font: { weight: 600, size: 'clamp(1rem, 0.95rem + 0.25vw, 1.25rem)' }, lineHeight: '1.375rem', class: index_css_2.marqueeStyle })),
                             this.$render("i-label", { id: "lblArtist", caption: '', maxWidth: '100%', textOverflow: 'ellipsis', font: { size: 'clamp(0.75rem, 0.7rem + 0.25vw, 1rem)' } }))),
-                    this.$render("i-hstack", { id: "pnlMute", visible: false, gap: "1rem", verticalAlignment: 'center' },
+                    this.$render("i-hstack", { id: "pnlMute", visible: false, gap: "1rem", verticalAlignment: 'center', margin: { right: '0.5rem' } },
                         this.$render("i-icon", { name: "volume-up", width: '1.25rem', height: '1.25rem', fill: Theme.text.primary, id: "iconMute", cursor: 'pointer', stack: { shrink: '0' }, onClick: this.onMute }),
                         this.$render("i-range", { id: "sliderVolume", min: 0, max: 1, step: 0.01, value: 1, height: "auto", width: '50px', stack: { shrink: '0', grow: '0' }, onChanged: this.onVolume })),
                     this.$render("i-grid-layout", { id: "timeLineGrid", width: '100%', verticalAlignment: 'center', gap: { column: '1rem', row: '0.5rem' } },
@@ -776,8 +778,11 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
             this.isVideo = true;
             this.playList.visible = false;
             this.playerPanel.visible = true;
+            this.playerPanel.padding = { top: '0', bottom: '0', left: '0', right: '0' };
             this.playlistEl.templateColumns = ['auto'];
             this.playlistEl.templateAreas = [['player'], ['player']];
+            this.player.border = { radius: '2rem' };
+            this.playlistEl.margin = { bottom: '1rem' };
             this.player.setData({
                 type: 'audio',
                 url: this.url
@@ -786,6 +791,9 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
         checkParsedData() {
             if (!this.parsedData)
                 return;
+            this.playerPanel.padding = { top: '1rem', bottom: '1rem', left: '2.5rem', right: '2.5rem' };
+            this.player.border = { radius: '0px' };
+            this.playlistEl.margin = { bottom: 0 };
             const playlists = this.parsedData.playlists || [];
             const segments = this.parsedData.segments || [];
             const isStreamVideo = segments.every(segment => /\.ts$/.test(segment.uri || ''));

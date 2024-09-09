@@ -141,6 +141,7 @@ export class ScomMediaPlayerPlayer extends Module {
       this.playerGrid.visible = true;
       this.playerGrid.direction = 'horizontal';
       this.playerGrid.reverse = true;
+      this.playerGrid.padding = {left: '1rem', right: '1rem', top: '0.5rem', bottom: '0.5rem'};
       this.pnlPrevNext.border = {style: 'none', width: 0};
       this.pnlPrevNext.stack = {grow: '0', shrink: '1'};
       this.currentTrack = {uri: this.url, title: 'No title', artist: 'No name', poster: ''};
@@ -153,6 +154,7 @@ export class ScomMediaPlayerPlayer extends Module {
       this.playerGrid.visible = true;
       this.playerGrid.direction = 'vertical';
       this.playerGrid.reverse = false;
+      this.playerGrid.padding = {left: '1rem', right: '1rem', top: '1rem', bottom: '1rem'};
       this.pnlPrevNext.border = {radius: '0.25rem', width: '1px', style: 'solid', color: Theme.divider};
       this.pnlPrevNext.stack = {grow: '1', shrink: '1'};
       this.timeLineGrid.templateAreas = [['range', 'range'], ['start', 'end']];
@@ -474,6 +476,7 @@ export class ScomMediaPlayerPlayer extends Module {
         id="playerWrapper"
         width="100%" height={'100%'}
         background={{color: Theme.background.paper}}
+        border={{radius: 'inherit'}}
       >
         <i-video
           id="video"
@@ -536,7 +539,7 @@ export class ScomMediaPlayerPlayer extends Module {
               ></i-label>
             </i-vstack>
           </i-hstack>
-          <i-hstack id="pnlMute" visible={false} gap="1rem" verticalAlignment='center'>
+          <i-hstack id="pnlMute" visible={false} gap="1rem" verticalAlignment='center' margin={{right: '0.5rem'}}>
             <i-icon
               name="volume-up"
               width={'1.25rem'} height={'1.25rem'}

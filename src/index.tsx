@@ -136,8 +136,11 @@ export default class ScomMediaPlayer extends Module {
     this.isVideo = true;
     this.playList.visible = false;
     this.playerPanel.visible = true;
+    this.playerPanel.padding = {top: '0', bottom: '0', left: '0', right: '0'};
     this.playlistEl.templateColumns = ['auto'];
     this.playlistEl.templateAreas = [['player'], ['player']];
+    this.player.border = {radius: '2rem'};
+    this.playlistEl.margin = {bottom: '1rem'};
     this.player.setData({
       type: 'audio',
       url: this.url
@@ -146,6 +149,9 @@ export default class ScomMediaPlayer extends Module {
 
   private checkParsedData() {
     if (!this.parsedData) return;
+    this.playerPanel.padding = {top: '1rem', bottom: '1rem', left: '2.5rem', right: '2.5rem'};
+    this.player.border = {radius: '0px'};
+    this.playlistEl.margin = {bottom: 0};
     const playlists = this.parsedData.playlists || [];
     const segments = this.parsedData.segments || [];
     const isStreamVideo = segments.every(segment => /\.ts$/.test(segment.uri || ''));
