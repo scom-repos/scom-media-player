@@ -14,6 +14,7 @@ import {
 import { ITrack } from '../inteface';
 import { trackStyle } from './index.css';
 import { formatTime } from '../utils';
+import translations from '../translations.json';
 const Theme = Styles.Theme.ThemeVars;
 
 interface ScomMediaPlayerPlaylistElement extends ControlElement {
@@ -161,13 +162,13 @@ export class ScomMediaPlayerPlaylist extends Module {
               </i-panel>
               <i-vstack gap="0.25rem" verticalAlignment='center'>
                 <i-label
-                  caption={track.title || 'No title'}
+                  caption={track.title || '$no_title'}
                   font={{size: '1rem'}}
                   wordBreak='break-all'
                   lineClamp={1}
                 ></i-label>
                 <i-label
-                  caption={track.artist || 'No name'}
+                  caption={track.artist || '$no_name'}
                   font={{size: '0.875rem', color: Theme.text.secondary}}
                   textOverflow='ellipsis'
                 ></i-label>
@@ -222,6 +223,7 @@ export class ScomMediaPlayerPlaylist extends Module {
   }
 
   async init() {
+    this.i18n.init({...translations});
     super.init();
     this.onItemClicked = this.getAttribute('onItemClicked', true) || this.onItemClicked;
     const data = this.getAttribute('data', true);
@@ -262,7 +264,7 @@ export class ScomMediaPlayerPlaylist extends Module {
             <i-icon name="heart" width={'1.25rem'} height={'1.25rem'} fill={Theme.text.primary}></i-icon>
           </i-panel>
         </i-hstack> */}
-        <i-label caption='Tracks' font={{weight: 600, size: '1rem'}}></i-label>
+        <i-label caption='$tracks' font={{weight: 600, size: '1rem'}}></i-label>
         <i-vstack id="pnlPlaylist" margin={{ bottom: '0.75rem'}}></i-vstack>
       </i-vstack>
     );
