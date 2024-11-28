@@ -104,15 +104,19 @@ define("@scom/scom-media-player/translations.json.ts", ["require", "exports"], f
     ///<amd-module name='@scom/scom-media-player/translations.json.ts'/> 
     exports.default = {
         "en": {
-            "tracks": "Tracks",
+            "no_name": "No name",
             "no_title": "No title",
-            "no_name": "No name"
+            "tracks": "Tracks"
         },
-        "zh-hant": {},
+        "zh-hant": {
+            "no_name": "無名",
+            "no_title": "無標題",
+            "tracks": "曲目"
+        },
         "vi": {
-            "tracks": "Danh sách phát",
+            "no_name": "Chưa có tên",
             "no_title": "Chưa có tiêu đề",
-            "no_name": "Chưa có tên"
+            "tracks": "Danh sách phát"
         }
     };
 });

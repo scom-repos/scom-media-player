@@ -29,15 +29,19 @@ declare module "@scom/scom-media-player/utils.ts" {
 declare module "@scom/scom-media-player/translations.json.ts" {
     const _default: {
         en: {
-            tracks: string;
-            no_title: string;
             no_name: string;
+            no_title: string;
+            tracks: string;
         };
-        "zh-hant": {};
-        vi: {
-            tracks: string;
-            no_title: string;
+        "zh-hant": {
             no_name: string;
+            no_title: string;
+            tracks: string;
+        };
+        vi: {
+            no_name: string;
+            no_title: string;
+            tracks: string;
         };
     };
     export default _default;
