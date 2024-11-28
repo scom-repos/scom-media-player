@@ -98,7 +98,25 @@ define("@scom/scom-media-player/utils.ts", ["require", "exports", "@ijstech/comp
     };
     exports.formatTime = formatTime;
 });
-define("@scom/scom-media-player/common/playList.tsx", ["require", "exports", "@ijstech/components", "@scom/scom-media-player/common/index.css.ts", "@scom/scom-media-player/utils.ts"], function (require, exports, components_3, index_css_1, utils_1) {
+define("@scom/scom-media-player/translations.json.ts", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    ///<amd-module name='@scom/scom-media-player/translations.json.ts'/> 
+    exports.default = {
+        "en": {
+            "tracks": "Tracks",
+            "no_title": "No title",
+            "no_name": "No name"
+        },
+        "zh-hant": {},
+        "vi": {
+            "tracks": "Danh sách phát",
+            "no_title": "Chưa có tiêu đề",
+            "no_name": "Chưa có tên"
+        }
+    };
+});
+define("@scom/scom-media-player/common/playList.tsx", ["require", "exports", "@ijstech/components", "@scom/scom-media-player/common/index.css.ts", "@scom/scom-media-player/utils.ts", "@scom/scom-media-player/translations.json.ts"], function (require, exports, components_3, index_css_1, utils_1, translations_json_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ScomMediaPlayerPlaylist = void 0;
@@ -171,8 +189,8 @@ define("@scom/scom-media-player/common/playList.tsx", ["require", "exports", "@i
                                 this.$render("i-image", { url: track.poster || '', width: '100%', height: '100%', display: 'inline-block', background: { color: Theme.background.modal }, objectFit: 'cover' }),
                                 this.$render("i-icon", { name: 'play', width: '1rem', height: '1rem', position: 'absolute', top: '0.75rem', left: '0.75rem', opacity: 0, zIndex: 10 })),
                             this.$render("i-vstack", { gap: "0.25rem", verticalAlignment: 'center' },
-                                this.$render("i-label", { caption: track.title || 'No title', font: { size: '1rem' }, wordBreak: 'break-all', lineClamp: 1 }),
-                                this.$render("i-label", { caption: track.artist || 'No name', font: { size: '0.875rem', color: Theme.text.secondary }, textOverflow: 'ellipsis' }))),
+                                this.$render("i-label", { caption: track.title || '$no_title', font: { size: '1rem' }, wordBreak: 'break-all', lineClamp: 1 }),
+                                this.$render("i-label", { caption: track.artist || '$no_name', font: { size: '0.875rem', color: Theme.text.secondary }, textOverflow: 'ellipsis' }))),
                         this.$render("i-label", { caption: (0, utils_1.formatTime)(track.duration), font: { size: '0.875rem', color: Theme.text.secondary } })));
                     this.pnlPlaylist.appendChild(pnlTrack);
                 }
@@ -218,6 +236,7 @@ define("@scom/scom-media-player/common/playList.tsx", ["require", "exports", "@i
             }
         }
         async init() {
+            this.i18n.init({ ...translations_json_1.default });
             super.init();
             this.onItemClicked = this.getAttribute('onItemClicked', true) || this.onItemClicked;
             const data = this.getAttribute('data', true);
@@ -231,7 +250,7 @@ define("@scom/scom-media-player/common/playList.tsx", ["require", "exports", "@i
                     this.$render("i-vstack", { gap: "0.25rem" },
                         this.$render("i-label", { caption: '', font: { size: '1.25rem' }, id: 'lblTitle' }),
                         this.$render("i-label", { caption: '', font: { size: '0.875rem', color: Theme.text.secondary }, id: 'lblDesc' }))),
-                this.$render("i-label", { caption: 'Tracks', font: { weight: 600, size: '1rem' } }),
+                this.$render("i-label", { caption: '$tracks', font: { weight: 600, size: '1rem' } }),
                 this.$render("i-vstack", { id: "pnlPlaylist", margin: { bottom: '0.75rem' } })));
         }
     };
@@ -240,12 +259,13 @@ define("@scom/scom-media-player/common/playList.tsx", ["require", "exports", "@i
     ], ScomMediaPlayerPlaylist);
     exports.ScomMediaPlayerPlaylist = ScomMediaPlayerPlaylist;
 });
-define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijstech/components", "@scom/scom-media-player/common/index.css.ts"], function (require, exports, components_4, index_css_2) {
+define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijstech/components", "@scom/scom-media-player/common/index.css.ts", "@scom/scom-media-player/translations.json.ts"], function (require, exports, components_4, index_css_2, translations_json_2) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ScomMediaPlayerPlayer = void 0;
     const Theme = components_4.Styles.Theme.ThemeVars;
-    const DEFAULT_SKIP_TIME = 10;
+    const NO_TITLE = '$no_title';
+    const NO_NAME = '$no_name';
     let ScomMediaPlayerPlayer = class ScomMediaPlayerPlayer extends components_4.Module {
         constructor(parent, options) {
             super(parent, options);
@@ -306,7 +326,7 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
                 this.playerGrid.padding = { left: '1rem', right: '1rem', top: '0.5rem', bottom: '0.5rem' };
                 this.pnlPrevNext.border = { style: 'none', width: 0 };
                 this.pnlPrevNext.stack = { grow: '0', shrink: '1' };
-                this.currentTrack = { uri: this.url, title: 'No title', artist: 'No name', poster: '' };
+                this.currentTrack = { uri: this.url, title: NO_TITLE, artist: NO_NAME, poster: '' };
                 this.timeLineGrid.templateAreas = [['start', 'range', 'end']];
                 this.timeLineGrid.templateColumns = ['auto', '1fr', 'auto'];
                 this.pnlControls.width = 'auto';
@@ -390,7 +410,7 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
             return url.startsWith('//') || url.startsWith('http') ? url : this.url + '/' + url;
         }
         renderTrack() {
-            const { title = 'No title', artist = 'No name', poster = '' } = this.currentTrack || {};
+            const { title = NO_TITLE, artist = NO_NAME, poster = '' } = this.currentTrack || {};
             this.imgTrack.url = poster;
             this.lblArtist.caption = artist;
             this.lblTrack.caption = title;
@@ -474,6 +494,7 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
         }
         resizeLayout(mobile) { }
         async init() {
+            this.i18n.init({ ...translations_json_2.default });
             super.init();
             this.onNext = this.getAttribute('onNext', true) || this.onNext;
             this.onPrev = this.getAttribute('onPrev', true) || this.onPrev;
@@ -600,7 +621,7 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
             });
         }
         updateMetadata() {
-            const { title = 'No title', artist = 'No name', poster = '' } = this.currentTrack || {};
+            const { title = NO_TITLE, artist = NO_NAME, poster = '' } = this.currentTrack || {};
             navigator.mediaSession.metadata = new MediaMetadata({
                 title,
                 artist,

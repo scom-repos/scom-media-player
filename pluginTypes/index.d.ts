@@ -25,6 +25,23 @@ declare module "@scom/scom-media-player/utils.ts" {
     export const getPath: (url: string) => string;
     export const formatTime: (time: number | string) => string;
 }
+/// <amd-module name="@scom/scom-media-player/translations.json.ts" />
+declare module "@scom/scom-media-player/translations.json.ts" {
+    const _default: {
+        en: {
+            tracks: string;
+            no_title: string;
+            no_name: string;
+        };
+        "zh-hant": {};
+        vi: {
+            tracks: string;
+            no_title: string;
+            no_name: string;
+        };
+    };
+    export default _default;
+}
 /// <amd-module name="@scom/scom-media-player/common/playList.tsx" />
 declare module "@scom/scom-media-player/common/playList.tsx" {
     import { ControlElement, Module, Container } from '@ijstech/components';
