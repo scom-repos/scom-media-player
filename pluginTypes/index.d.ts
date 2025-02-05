@@ -33,18 +33,18 @@ declare module "@scom/scom-media-player/utils.ts" {
 declare module "@scom/scom-media-player/translations.json.ts" {
     const _default: {
         en: {
-            no_title: string;
             no_name: string;
+            no_title: string;
             tracks: string;
         };
         "zh-hant": {
-            no_title: string;
             no_name: string;
+            no_title: string;
             tracks: string;
         };
         vi: {
-            no_title: string;
             no_name: string;
+            no_title: string;
             tracks: string;
         };
     };

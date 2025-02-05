@@ -46,7 +46,8 @@ interface IPlayer {
   type: MediaType;
 }
 
-const DEFAULT_SKIP_TIME = 10;
+const NO_TITLE = '$no_title';
+const NO_NAME = '$no_name';
 
 @customElements('i-scom-media-player--player')
 export class ScomMediaPlayerPlayer extends Module {
@@ -145,7 +146,7 @@ export class ScomMediaPlayerPlayer extends Module {
       this.playerGrid.padding = { left: '1rem', right: '1rem', top: '0.5rem', bottom: '0.5rem' };
       this.pnlPrevNext.border = { style: 'none', width: 0 };
       this.pnlPrevNext.stack = { grow: '0', shrink: '1' };
-      this.currentTrack = { uri: this.url, title: 'No title', artist: 'No name', poster: '' };
+      this.currentTrack = { uri: this.url, title: NO_TITLE, artist: NO_NAME, poster: '' };
       this.timeLineGrid.templateAreas = [['start', 'range', 'end']];
       this.timeLineGrid.templateColumns = ['auto', '1fr', 'auto'];
       this.pnlControls.width = 'auto';
@@ -233,7 +234,7 @@ export class ScomMediaPlayerPlayer extends Module {
   }
 
   private renderTrack() {
-    const { title = this.i18n.get('$no_title'), artist = this.i18n.get('$no_name'), poster = '' } = this.currentTrack || {};
+    const { title = NO_TITLE, artist = NO_NAME, poster = '' } = this.currentTrack || {};
     this.imgTrack.url = poster;
     this.lblArtist.caption = artist;
     this.lblTrack.caption = title;
@@ -463,7 +464,7 @@ export class ScomMediaPlayerPlayer extends Module {
   }
 
   private updateMetadata() {
-    const { title = this.i18n.get('$no_title'), artist = this.i18n.get('$no_name'), poster = '' } = this.currentTrack || {};
+    const { title = NO_TITLE, artist = NO_NAME, poster = '' } = this.currentTrack || {};
     navigator.mediaSession.metadata = new MediaMetadata({
       title,
       artist,
