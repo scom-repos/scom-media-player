@@ -98,7 +98,29 @@ define("@scom/scom-media-player/utils.ts", ["require", "exports", "@ijstech/comp
     };
     exports.formatTime = formatTime;
 });
-define("@scom/scom-media-player/common/playList.tsx", ["require", "exports", "@ijstech/components", "@scom/scom-media-player/common/index.css.ts", "@scom/scom-media-player/utils.ts"], function (require, exports, components_3, index_css_1, utils_1) {
+define("@scom/scom-media-player/translations.json.ts", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    ///<amd-module name='@scom/scom-media-player/translations.json.ts'/> 
+    exports.default = {
+        "en": {
+            "no_title": "No title",
+            "no_name": "No name",
+            "tracks": "Tracks",
+        },
+        "zh-hant": {
+            "no_title": "無標題",
+            "no_name": "無名稱",
+            "tracks": "曲目",
+        },
+        "vi": {
+            "no_title": "Không tiêu đề",
+            "no_name": "Không tên",
+            "tracks": "Danh sách bài hát",
+        }
+    };
+});
+define("@scom/scom-media-player/common/playList.tsx", ["require", "exports", "@ijstech/components", "@scom/scom-media-player/common/index.css.ts", "@scom/scom-media-player/utils.ts", "@scom/scom-media-player/translations.json.ts"], function (require, exports, components_3, index_css_1, utils_1, translations_json_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ScomMediaPlayerPlaylist = void 0;
@@ -171,8 +193,8 @@ define("@scom/scom-media-player/common/playList.tsx", ["require", "exports", "@i
                                 this.$render("i-image", { url: track.poster || '', width: '100%', height: '100%', display: 'inline-block', background: { color: Theme.background.modal }, objectFit: 'cover' }),
                                 this.$render("i-icon", { name: 'play', width: '1rem', height: '1rem', position: 'absolute', top: '0.75rem', left: '0.75rem', opacity: 0, zIndex: 10 })),
                             this.$render("i-vstack", { gap: "0.25rem", verticalAlignment: 'center' },
-                                this.$render("i-label", { caption: track.title || 'No title', font: { size: '1rem' }, wordBreak: 'break-all', lineClamp: 1 }),
-                                this.$render("i-label", { caption: track.artist || 'No name', font: { size: '0.875rem', color: Theme.text.secondary }, textOverflow: 'ellipsis' }))),
+                                this.$render("i-label", { caption: track.title || this.i18n.get('$no_title'), font: { size: '1rem' }, wordBreak: 'break-all', lineClamp: 1 }),
+                                this.$render("i-label", { caption: track.artist || this.i18n.get('$no_name'), font: { size: '0.875rem', color: Theme.text.secondary }, textOverflow: 'ellipsis' }))),
                         this.$render("i-label", { caption: (0, utils_1.formatTime)(track.duration), font: { size: '0.875rem', color: Theme.text.secondary } })));
                     this.pnlPlaylist.appendChild(pnlTrack);
                 }
@@ -218,6 +240,7 @@ define("@scom/scom-media-player/common/playList.tsx", ["require", "exports", "@i
             }
         }
         async init() {
+            this.i18n.init({ ...translations_json_1.default });
             super.init();
             this.onItemClicked = this.getAttribute('onItemClicked', true) || this.onItemClicked;
             const data = this.getAttribute('data', true);
@@ -231,7 +254,7 @@ define("@scom/scom-media-player/common/playList.tsx", ["require", "exports", "@i
                     this.$render("i-vstack", { gap: "0.25rem" },
                         this.$render("i-label", { caption: '', font: { size: '1.25rem' }, id: 'lblTitle' }),
                         this.$render("i-label", { caption: '', font: { size: '0.875rem', color: Theme.text.secondary }, id: 'lblDesc' }))),
-                this.$render("i-label", { caption: 'Tracks', font: { weight: 600, size: '1rem' } }),
+                this.$render("i-label", { caption: "$tracks", font: { weight: 600, size: '1rem' } }),
                 this.$render("i-vstack", { id: "pnlPlaylist", margin: { bottom: '0.75rem' } })));
         }
     };
@@ -240,7 +263,7 @@ define("@scom/scom-media-player/common/playList.tsx", ["require", "exports", "@i
     ], ScomMediaPlayerPlaylist);
     exports.ScomMediaPlayerPlaylist = ScomMediaPlayerPlaylist;
 });
-define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijstech/components", "@scom/scom-media-player/common/index.css.ts"], function (require, exports, components_4, index_css_2) {
+define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijstech/components", "@scom/scom-media-player/common/index.css.ts", "@scom/scom-media-player/translations.json.ts"], function (require, exports, components_4, index_css_2, translations_json_2) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ScomMediaPlayerPlayer = void 0;
@@ -390,7 +413,7 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
             return url.startsWith('//') || url.startsWith('http') ? url : this.url + '/' + url;
         }
         renderTrack() {
-            const { title = 'No title', artist = 'No name', poster = '' } = this.currentTrack || {};
+            const { title = this.i18n.get('$no_title'), artist = this.i18n.get('$no_name'), poster = '' } = this.currentTrack || {};
             this.imgTrack.url = poster;
             this.lblArtist.caption = artist;
             this.lblTrack.caption = title;
@@ -474,6 +497,7 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
         }
         resizeLayout(mobile) { }
         async init() {
+            this.i18n.init({ ...translations_json_2.default });
             super.init();
             this.onNext = this.getAttribute('onNext', true) || this.onNext;
             this.onPrev = this.getAttribute('onPrev', true) || this.onPrev;
@@ -600,7 +624,7 @@ define("@scom/scom-media-player/common/player.tsx", ["require", "exports", "@ijs
             });
         }
         updateMetadata() {
-            const { title = 'No title', artist = 'No name', poster = '' } = this.currentTrack || {};
+            const { title = this.i18n.get('$no_title'), artist = this.i18n.get('$no_name'), poster = '' } = this.currentTrack || {};
             navigator.mediaSession.metadata = new MediaMetadata({
                 title,
                 artist,
@@ -689,24 +713,210 @@ define("@scom/scom-media-player/index.css.ts", ["require", "exports", "@ijstech/
         }
     });
 });
-define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", "@scom/scom-media-player/index.css.ts", "@scom/scom-media-player/utils.ts"], function (require, exports, components_6, index_css_3, utils_2) {
+define("@scom/scom-media-player/model.ts", ["require", "exports", "@ijstech/components"], function (require, exports, components_6) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    const Theme = components_6.Styles.Theme.ThemeVars;
-    const reqs = ['m3u8-parser'];
+    exports.Model = void 0;
     const path = components_6.application.currentModuleDir;
+    const reqs = ['m3u8-parser'];
+    class Model {
+        constructor(module, options) {
+            this.options = {
+                updateWidget: async () => { },
+                resize: () => { }
+            };
+            this._data = { url: '' };
+            this._theme = 'light';
+            this._parsedData = {};
+            this.module = module;
+            this.options = options;
+        }
+        get url() {
+            return this._data.url;
+        }
+        set url(value) {
+            this._data.url = value;
+        }
+        get parsedData() {
+            return this._parsedData;
+        }
+        getData() {
+            return this._data;
+        }
+        async setData(value) {
+            this._data = value;
+            await this.options.updateWidget();
+        }
+        getTag() {
+            return this.module.tag;
+        }
+        async setTag(value) {
+            const newValue = value || {};
+            for (let prop in newValue) {
+                if (newValue.hasOwnProperty(prop)) {
+                    if (prop === 'light' || prop === 'dark')
+                        this.updateTag(prop, newValue[prop]);
+                    else
+                        this.module.tag[prop] = newValue[prop];
+                }
+            }
+            this.updateTheme();
+            this.options.resize();
+        }
+        updateTag(type, value) {
+            this.module.tag[type] = this.module.tag[type] ?? {};
+            for (let prop in value) {
+                if (value.hasOwnProperty(prop))
+                    this.module.tag[type][prop] = value[prop];
+            }
+        }
+        updateStyle(name, value) {
+            value ?
+                this.module.style.setProperty(name, value) :
+                this.module.style.removeProperty(name);
+        }
+        updateTheme() {
+            const themeVar = this._theme || document.body.style.getPropertyValue('--theme');
+            const tag = this.module.tag[themeVar] || {};
+            this.updateStyle('--text-primary', tag.fontColor);
+            this.updateStyle('--text-secondary', tag.secondaryColor);
+            this.updateStyle('--background-main', tag.backgroundColor);
+            this.updateStyle('--colors-primary-main', tag.primaryColor);
+            this.updateStyle('--colors-primary-light', tag.primaryLightColor);
+            this.updateStyle('--colors-primary-dark', tag.primaryDarkColor);
+            this.updateStyle('--colors-secondary-light', tag.secondaryLight);
+            this.updateStyle('--colors-secondary-main', tag.secondaryMain);
+            this.updateStyle('--divider', tag.borderColor);
+            this.updateStyle('--action-selected', tag.selected);
+            this.updateStyle('--action-selected_background', tag.selectedBackground);
+            this.updateStyle('--action-hover_background', tag.hoverBackground);
+            this.updateStyle('--action-hover', tag.hover);
+        }
+        getConfigurators() {
+            return [
+                {
+                    name: 'Builder Configurator',
+                    target: 'Builders',
+                    getActions: () => {
+                        return this._getActions();
+                    },
+                    getData: this.getData.bind(this),
+                    setData: this.setData.bind(this),
+                    getTag: this.getTag.bind(this),
+                    setTag: this.setTag.bind(this)
+                },
+                {
+                    name: 'Editor',
+                    target: 'Editor',
+                    getActions: () => {
+                        return this._getActions();
+                    },
+                    getData: this.getData.bind(this),
+                    setData: this.setData.bind(this),
+                    getTag: this.getTag.bind(this),
+                    setTag: this.setTag.bind(this),
+                }
+            ];
+        }
+        getPropertiesSchema() {
+            const schema = {
+                type: "object",
+                required: ["url"],
+                properties: {
+                    url: {
+                        type: "string"
+                    }
+                }
+            };
+            return schema;
+        }
+        _getActions() {
+            const propertiesSchema = this.getPropertiesSchema();
+            const actions = [
+                {
+                    name: 'Edit',
+                    icon: 'edit',
+                    command: (builder, userInputData) => {
+                        let oldData = { url: '' };
+                        return {
+                            execute: () => {
+                                oldData = { ...this._data };
+                                if (userInputData?.url)
+                                    this._data.url = userInputData.url;
+                                this.options.updateWidget();
+                                if (builder?.setData)
+                                    builder.setData(this._data);
+                            },
+                            undo: () => {
+                                this._data = { ...oldData };
+                                this.options.updateWidget();
+                                if (builder?.setData)
+                                    builder.setData(this._data);
+                            },
+                            redo: () => { }
+                        };
+                    },
+                    userInputDataSchema: propertiesSchema
+                }
+            ];
+            return actions;
+        }
+        async loadLib() {
+            if (window.m3u8Parser)
+                return;
+            const moduleDir = this.module['currentModuleDir'] || path;
+            return new Promise((resolve, reject) => {
+                components_6.RequireJS.config({
+                    baseUrl: `${moduleDir}/lib`,
+                    paths: {
+                        'm3u8-parser': 'm3u8-parser.min'
+                    }
+                });
+                components_6.RequireJS.require(reqs, function (m3u8Parser) {
+                    window.m3u8Parser = m3u8Parser;
+                    resolve(true);
+                });
+            });
+        }
+        async handleStreamData() {
+            await this.loadLib();
+            const parser = new window.m3u8Parser.Parser();
+            parser.addParser({
+                expression: /#EXTIMG/,
+                customType: 'poster',
+                dataParser: function (line) {
+                    return line.replace('#EXTIMG:', '').trim();
+                },
+                segment: true
+            });
+            const result = await fetch(this.url);
+            const manifest = await result.text();
+            parser.push(manifest);
+            parser.end();
+            this._parsedData = parser.manifest;
+        }
+        isEmptyObject(value) {
+            if (!value)
+                return true;
+            return Object.keys(value).length === 0;
+        }
+    }
+    exports.Model = Model;
+});
+define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", "@scom/scom-media-player/index.css.ts", "@scom/scom-media-player/utils.ts", "@scom/scom-media-player/model.ts"], function (require, exports, components_7, index_css_3, utils_2, model_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    const Theme = components_7.Styles.Theme.ThemeVars;
     const MAX_WIDTH = 700;
-    let ScomMediaPlayer = class ScomMediaPlayer extends components_6.Module {
+    let ScomMediaPlayer = class ScomMediaPlayer extends components_7.Module {
         constructor(parent, options) {
             super(parent, options);
             this.tag = {
                 light: {},
                 dark: {}
             };
-            this._theme = 'light';
-            this._data = { url: '' };
             this.isVideo = false;
-            this.parsedData = {};
+            this.initModel();
             this.onPlay = this.onPlay.bind(this);
             this.onNext = this.onNext.bind(this);
             this.onPrev = this.onPrev.bind(this);
@@ -718,31 +928,29 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
             return self;
         }
         get url() {
-            return this._data.url;
+            return this.model.url;
         }
         set url(value) {
-            this._data.url = value;
+            this.model.url = value;
+        }
+        get parsedData() {
+            return this.model.parsedData;
+        }
+        getConfigurators() {
+            this.initModel();
+            return this.model.getConfigurators();
+        }
+        getTag() {
+            return this.tag;
+        }
+        setTag(value) {
+            this.model.setTag(value);
         }
         async setData(value) {
-            this._data = value;
-            await this.renderUI();
+            this.model.setData(value);
         }
         getData() {
-            return this._data;
-        }
-        async loadLib() {
-            const moduleDir = this['currentModuleDir'] || path;
-            return new Promise((resolve, reject) => {
-                components_6.RequireJS.config({
-                    baseUrl: `${moduleDir}/lib`,
-                    paths: {
-                        'm3u8-parser': 'm3u8-parser.min'
-                    }
-                });
-                components_6.RequireJS.require(reqs, function (m3u8Parser) {
-                    resolve(new m3u8Parser.Parser());
-                });
-            });
+            return this.model.getData();
         }
         async renderUI() {
             if (!this.url || (!(0, utils_2.isStreaming)(this.url) && !(0, utils_2.isAudio)(this.url)))
@@ -755,22 +963,7 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
             }
         }
         async renderStreamData() {
-            if (!this.parser) {
-                this.parser = await this.loadLib();
-                this.parser.addParser({
-                    expression: /#EXTIMG/,
-                    customType: 'poster',
-                    dataParser: function (line) {
-                        return line.replace('#EXTIMG:', '').trim();
-                    },
-                    segment: true
-                });
-            }
-            const result = await fetch(this.url);
-            const manifest = await result.text();
-            this.parser.push(manifest);
-            this.parser.end();
-            this.parsedData = this.parser.manifest;
+            await this.model.handleStreamData();
             this.player.url = this.url;
             this.checkParsedData();
         }
@@ -797,11 +990,11 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
             const playlists = this.parsedData.playlists || [];
             const segments = this.parsedData.segments || [];
             const isStreamVideo = segments.every(segment => /\.ts$/.test(segment.uri || ''));
-            const isVideo = playlists.some(playlist => playlist.attributes.RESOLUTION);
+            const isVideo = playlists.some(playlist => playlist.attributes?.RESOLUTION);
             if ((playlists.length && !isVideo) || (segments.length && !isStreamVideo)) {
                 let value = [...playlists];
-                const haveAudioGroup = !this.isEmptyObject(this.parsedData?.mediaGroups?.AUDIO);
-                const isAudioOnly = playlists.length && playlists.every(playlist => !playlist.attributes.RESOLUTION);
+                const haveAudioGroup = !this.model.isEmptyObject(this.parsedData?.mediaGroups?.AUDIO);
+                const isAudioOnly = playlists.length && playlists.every(playlist => !playlist.attributes?.RESOLUTION);
                 if (isAudioOnly && haveAudioGroup) {
                     value = [{ uri: this.url, title: '' }];
                 }
@@ -813,11 +1006,6 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
             else {
                 this.renderVideo();
             }
-        }
-        isEmptyObject(value) {
-            if (!value)
-                return true;
-            return Object.keys(value).length === 0;
         }
         renderVideo() {
             this.isVideo = true;
@@ -880,108 +1068,6 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
         onStateChanged(value) {
             this.playList.togglePlay(value);
         }
-        getConfigurators() {
-            return [
-                {
-                    name: 'Builder Configurator',
-                    target: 'Builders',
-                    getActions: () => {
-                        return this._getActions();
-                    },
-                    getData: this.getData.bind(this),
-                    setData: this.setData.bind(this),
-                    getTag: this.getTag.bind(this),
-                    setTag: this.setTag.bind(this)
-                }
-            ];
-        }
-        getPropertiesSchema() {
-            const schema = {
-                type: "object",
-                required: ["url"],
-                properties: {
-                    url: {
-                        type: "string"
-                    }
-                }
-            };
-            return schema;
-        }
-        _getActions() {
-            const propertiesSchema = this.getPropertiesSchema();
-            const actions = [
-                {
-                    name: 'Edit',
-                    icon: 'edit',
-                    command: (builder, userInputData) => {
-                        let oldData = { url: '' };
-                        return {
-                            execute: () => {
-                                oldData = { ...this._data };
-                                if (userInputData?.url)
-                                    this._data.url = userInputData.url;
-                                this.renderUI();
-                                if (builder?.setData)
-                                    builder.setData(this._data);
-                            },
-                            undo: () => {
-                                this._data = { ...oldData };
-                                this.renderUI();
-                                if (builder?.setData)
-                                    builder.setData(this._data);
-                            },
-                            redo: () => { }
-                        };
-                    },
-                    userInputDataSchema: propertiesSchema
-                }
-            ];
-            return actions;
-        }
-        getTag() {
-            return this.tag;
-        }
-        setTag(value) {
-            const newValue = value || {};
-            for (let prop in newValue) {
-                if (newValue.hasOwnProperty(prop)) {
-                    if (prop === 'light' || prop === 'dark')
-                        this.updateTag(prop, newValue[prop]);
-                    else
-                        this.tag[prop] = newValue[prop];
-                }
-            }
-            this.updateTheme();
-            this.resizeLayout();
-        }
-        updateTag(type, value) {
-            this.tag[type] = this.tag[type] ?? {};
-            for (let prop in value) {
-                if (value.hasOwnProperty(prop))
-                    this.tag[type][prop] = value[prop];
-            }
-        }
-        updateStyle(name, value) {
-            value ?
-                this.style.setProperty(name, value) :
-                this.style.removeProperty(name);
-        }
-        updateTheme() {
-            const themeVar = this._theme || document.body.style.getPropertyValue('--theme');
-            this.updateStyle('--text-primary', this.tag[themeVar]?.fontColor);
-            this.updateStyle('--text-secondary', this.tag[themeVar]?.secondaryColor);
-            this.updateStyle('--background-main', this.tag[themeVar]?.backgroundColor);
-            this.updateStyle('--colors-primary-main', this.tag[themeVar]?.primaryColor);
-            this.updateStyle('--colors-primary-light', this.tag[themeVar]?.primaryLightColor);
-            this.updateStyle('--colors-primary-dark', this.tag[themeVar]?.primaryDarkColor);
-            this.updateStyle('--colors-secondary-light', this.tag[themeVar]?.secondaryLight);
-            this.updateStyle('--colors-secondary-main', this.tag[themeVar]?.secondaryMain);
-            this.updateStyle('--divider', this.tag[themeVar]?.borderColor);
-            this.updateStyle('--action-selected', this.tag[themeVar]?.selected);
-            this.updateStyle('--action-selected_background', this.tag[themeVar]?.selectedBackground);
-            this.updateStyle('--action-hover_background', this.tag[themeVar]?.hoverBackground);
-            this.updateStyle('--action-hover', this.tag[themeVar]?.hover);
-        }
         resizeLayout() {
             if (this.isVideo)
                 return;
@@ -1005,6 +1091,14 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
         refresh(skipRefreshControls) {
             super.refresh(skipRefreshControls);
             this.resizeLayout();
+        }
+        initModel() {
+            if (!this.model) {
+                this.model = new model_1.Model(this, {
+                    updateWidget: this.renderUI.bind(this),
+                    resize: this.resizeLayout.bind(this)
+                });
+            }
         }
         init() {
             super.init();
@@ -1043,8 +1137,8 @@ define("@scom/scom-media-player", ["require", "exports", "@ijstech/components", 
         }
     };
     ScomMediaPlayer = __decorate([
-        components_6.customModule,
-        (0, components_6.customElements)('i-scom-media-player')
+        components_7.customModule,
+        (0, components_7.customElements)('i-scom-media-player')
     ], ScomMediaPlayer);
     exports.default = ScomMediaPlayer;
 });

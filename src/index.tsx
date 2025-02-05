@@ -5,16 +5,14 @@ import {
   ControlElement,
   customElements,
   Styles,
-  RequireJS,
-  IDataSchema,
-  application,
   Panel,
   GridLayout
 } from '@ijstech/components'
 import { ScomMediaPlayerPlayer, ScomMediaPlayerPlaylist } from './common/index'
-import { ITrack } from './inteface'
+import { IMediaPlayer, ITrack } from './inteface'
 import { customScrollStyle } from './index.css'
 import { isAudio, isStreaming } from './utils';
+import { Model } from './model';
 
 const Theme = Styles.Theme.ThemeVars;
 
@@ -22,12 +20,6 @@ interface ScomMediaPlayerElement extends ControlElement {
   url?: string;
 }
 
-interface IMediaPlayer {
-  url: string;
-}
-
-const reqs = ['m3u8-parser'];
-const path = application.currentModuleDir;
 const MAX_WIDTH = 700;
 
 declare global {
@@ -41,23 +33,21 @@ declare global {
 @customModule
 @customElements('i-scom-media-player')
 export default class ScomMediaPlayer extends Module {
+  private model: Model;
   private playList: ScomMediaPlayerPlaylist;
   private player: ScomMediaPlayerPlayer;
   private playlistEl: GridLayout;
   private playerPanel: Panel;
-  private parser: any;
 
   tag: any = {
     light: {},
     dark: {}
   }
-  private _theme: string = 'light';
-  private _data: IMediaPlayer = { url: ''};
   private isVideo: boolean = false;
-  private parsedData: any = {};
 
   constructor(parent?: Container, options?: any) {
     super(parent, options);
+    this.initModel();
     this.onPlay = this.onPlay.bind(this);
     this.onNext = this.onNext.bind(this);
     this.onPrev = this.onPrev.bind(this);
@@ -71,34 +61,35 @@ export default class ScomMediaPlayer extends Module {
   }
 
   get url() {
-    return this._data.url;
+    return this.model.url;
   }
   set url(value: string) {
-    this._data.url = value;
+    this.model.url = value;
+  }
+
+  private get parsedData() {
+    return this.model.parsedData;
+  }
+
+  getConfigurators() {
+    this.initModel();
+    return this.model.getConfigurators();
+  }
+
+  getTag() {
+    return this.tag;
+  }
+
+  setTag(value: any) {
+    this.model.setTag(value);
   }
 
   private async setData(value: IMediaPlayer) {
-    this._data = value;
-    await this.renderUI();
+    this.model.setData(value);
   }
 
-  private getData() {
-    return this._data;
-  }
-
-  private async loadLib() {
-    const moduleDir = this['currentModuleDir'] || path;
-    return new Promise((resolve, reject) => {
-      RequireJS.config({
-        baseUrl: `${moduleDir}/lib`,
-        paths: {
-          'm3u8-parser': 'm3u8-parser.min'
-        }
-      })
-      RequireJS.require(reqs, function (m3u8Parser: any) {
-        resolve(new m3u8Parser.Parser());
-      });
-    })
+  getData() {
+    return this.model.getData();
   }
 
   private async renderUI() {
@@ -111,23 +102,7 @@ export default class ScomMediaPlayer extends Module {
   }
 
   private async renderStreamData() {
-    if (!this.parser) {
-      this.parser = await this.loadLib();
-      this.parser.addParser({
-        expression: /#EXTIMG/,
-        customType: 'poster',
-        dataParser: function(line: string) {
-          return line.replace('#EXTIMG:', '').trim()
-        },
-        segment: true
-      });
-    }
-    const result = await fetch(this.url);
-    const manifest = await result.text();
-
-    this.parser.push(manifest);
-    this.parser.end();
-    this.parsedData = this.parser.manifest;
+    await this.model.handleStreamData();
     this.player.url = this.url;
     this.checkParsedData();
   }
@@ -136,11 +111,11 @@ export default class ScomMediaPlayer extends Module {
     this.isVideo = true;
     this.playList.visible = false;
     this.playerPanel.visible = true;
-    this.playerPanel.padding = {top: '0', bottom: '0', left: '0', right: '0'};
+    this.playerPanel.padding = { top: '0', bottom: '0', left: '0', right: '0' };
     this.playlistEl.templateColumns = ['auto'];
     this.playlistEl.templateAreas = [['player'], ['player']];
-    this.player.border = {radius: '2rem'};
-    this.playlistEl.margin = {bottom: '1rem'};
+    this.player.border = { radius: '2rem' };
+    this.playlistEl.margin = { bottom: '1rem' };
     this.player.setData({
       type: 'audio',
       url: this.url
@@ -149,17 +124,17 @@ export default class ScomMediaPlayer extends Module {
 
   private checkParsedData() {
     if (!this.parsedData) return;
-    this.playerPanel.padding = {top: '1rem', bottom: '1rem', left: '2.5rem', right: '2.5rem'};
-    this.player.border = {radius: '0px'};
-    this.playlistEl.margin = {bottom: 0};
+    this.playerPanel.padding = { top: '1rem', bottom: '1rem', left: '2.5rem', right: '2.5rem' };
+    this.player.border = { radius: '0px' };
+    this.playlistEl.margin = { bottom: 0 };
     const playlists = this.parsedData.playlists || [];
     const segments = this.parsedData.segments || [];
     const isStreamVideo = segments.every(segment => /\.ts$/.test(segment.uri || ''));
-    const isVideo = playlists.some(playlist => playlist.attributes.RESOLUTION);
+    const isVideo = playlists.some(playlist => playlist.attributes?.RESOLUTION);
     if ((playlists.length && !isVideo) || (segments.length && !isStreamVideo)) {
       let value = [...playlists];
-      const haveAudioGroup = !this.isEmptyObject(this.parsedData?.mediaGroups?.AUDIO);
-      const isAudioOnly = playlists.length && playlists.every(playlist => !playlist.attributes.RESOLUTION);
+      const haveAudioGroup = !this.model.isEmptyObject(this.parsedData?.mediaGroups?.AUDIO);
+      const isAudioOnly = playlists.length && playlists.every(playlist => !playlist.attributes?.RESOLUTION);
       if (isAudioOnly && haveAudioGroup) {
         value = [{ uri: this.url, title: '' }];
       } else if (!isStreamVideo) {
@@ -169,11 +144,6 @@ export default class ScomMediaPlayer extends Module {
     } else {
       this.renderVideo();
     }
-  }
-
-  private isEmptyObject(value: any) {
-    if (!value) return true;
-    return Object.keys(value).length === 0;
   }
 
   private renderVideo() {
@@ -244,113 +214,6 @@ export default class ScomMediaPlayer extends Module {
     this.playList.togglePlay(value);
   }
 
-  getConfigurators() {
-    return [
-      {
-        name: 'Builder Configurator',
-        target: 'Builders',
-        getActions: () => {
-          return this._getActions();
-        },
-        getData: this.getData.bind(this),
-        setData: this.setData.bind(this),
-        getTag: this.getTag.bind(this),
-        setTag: this.setTag.bind(this)
-      }
-    ]
-  }
-
-  private getPropertiesSchema() {
-    const schema: IDataSchema = {
-      type: "object",
-      required: ["url"],
-      properties: {
-        url: {
-          type: "string"
-        }
-      }
-    };
-    return schema;
-  }
-
-  private _getActions() {
-    const propertiesSchema = this.getPropertiesSchema();
-    const actions = [
-      {
-        name: 'Edit',
-        icon: 'edit',
-        command: (builder: any, userInputData: any) => {
-          let oldData = {url: ''};
-          return {
-            execute: () => {
-              oldData = {...this._data};
-              if (userInputData?.url) this._data.url = userInputData.url;
-              this.renderUI();
-              if (builder?.setData) builder.setData(this._data);
-            },
-            undo: () => {
-              this._data = {...oldData};
-              this.renderUI();
-              if (builder?.setData) builder.setData(this._data);
-            },
-            redo: () => {}
-          }
-        },
-        userInputDataSchema: propertiesSchema as IDataSchema
-      }
-    ]
-    return actions
-  }
-
-  private getTag() {
-    return this.tag;
-  }
-
-  private setTag(value: any) {
-    const newValue = value || {};
-    for (let prop in newValue) {
-      if (newValue.hasOwnProperty(prop)) {
-        if (prop === 'light' || prop === 'dark')
-          this.updateTag(prop, newValue[prop]);
-        else
-          this.tag[prop] = newValue[prop];
-      }
-    }
-    this.updateTheme();
-    this.resizeLayout();
-  }
-
-  private updateTag(type: 'light' | 'dark', value: any) {
-    this.tag[type] = this.tag[type] ?? {};
-    for (let prop in value) {
-      if (value.hasOwnProperty(prop))
-        this.tag[type][prop] = value[prop];
-    }
-  }
-
-  private updateStyle(name: string, value: any) {
-    value ?
-      this.style.setProperty(name, value) :
-      this.style.removeProperty(name);
-  }
-
-  private updateTheme() {
-    const themeVar = this._theme || document.body.style.getPropertyValue('--theme');
-    this.updateStyle('--text-primary', this.tag[themeVar]?.fontColor);
-    this.updateStyle('--text-secondary', this.tag[themeVar]?.secondaryColor);
-    this.updateStyle('--background-main', this.tag[themeVar]?.backgroundColor);
-    this.updateStyle('--colors-primary-main', this.tag[themeVar]?.primaryColor);
-    this.updateStyle('--colors-primary-light', this.tag[themeVar]?.primaryLightColor);
-    this.updateStyle('--colors-primary-dark', this.tag[themeVar]?.primaryDarkColor);
-    this.updateStyle('--colors-secondary-light', this.tag[themeVar]?.secondaryLight);
-    this.updateStyle('--colors-secondary-main', this.tag[themeVar]?.secondaryMain);
-    this.updateStyle('--divider', this.tag[themeVar]?.borderColor);
-    this.updateStyle('--action-selected', this.tag[themeVar]?.selected);
-    this.updateStyle('--action-selected_background', this.tag[themeVar]?.selectedBackground);
-    this.updateStyle('--action-hover_background', this.tag[themeVar]?.hoverBackground);
-    this.updateStyle('--action-hover', this.tag[themeVar]?.hover);
-  }
-
   private resizeLayout() {
     if (this.isVideo) return;
     if (this.offsetWidth <= 0) return;
@@ -360,13 +223,13 @@ export default class ScomMediaPlayer extends Module {
       this.playlistEl.templateColumns = ['auto'];
       this.playlistEl.templateAreas = [['player'], ['playlist']];
 
-      this.playerPanel.padding = {top: 0, bottom: 0, left: 0, right: 0};
+      this.playerPanel.padding = { top: 0, bottom: 0, left: 0, right: 0 };
       this.player.resizeLayout(true);
     } else {
       this.playlistEl.templateColumns = ['repeat(2, 1fr)'];
       this.playlistEl.templateAreas = [['playlist', 'player']];
 
-      this.playerPanel.padding = {top: '1rem', bottom: '1rem', left: '2.5rem', right: '2.5rem'};
+      this.playerPanel.padding = { top: '1rem', bottom: '1rem', left: '2.5rem', right: '2.5rem' };
       this.player.resizeLayout(false);
     }
   }
@@ -374,6 +237,15 @@ export default class ScomMediaPlayer extends Module {
   refresh(skipRefreshControls?: boolean): void {
     super.refresh(skipRefreshControls);
     this.resizeLayout();
+  }
+
+  private initModel() {
+    if (!this.model) {
+      this.model = new Model(this, {
+        updateWidget: this.renderUI.bind(this),
+        resize: this.resizeLayout.bind(this)
+      })
+    }
   }
 
   init() {
@@ -388,15 +260,15 @@ export default class ScomMediaPlayer extends Module {
         maxHeight={'100dvh'}
         height="100%"
         overflow={'hidden'}
-        background={{color: Theme.background.main}}
+        background={{ color: Theme.background.main }}
       >
         <i-grid-layout
           id="playlistEl"
           position='relative'
           maxHeight={'100%'}
-          stack={{grow: '1', shrink: '1'}}
+          stack={{ grow: '1', shrink: '1' }}
           templateColumns={['repeat(2, 1fr)']}
-          gap={{column: '0px', row: '0.75rem'}}
+          gap={{ column: '0px', row: '0.75rem' }}
           mediaQueries={[
             {
               maxWidth: '767px',
@@ -410,31 +282,31 @@ export default class ScomMediaPlayer extends Module {
           <i-scom-media-player--playlist
             id="playList"
             display='block'
-            padding={{left: '1rem', right: '1rem'}}
+            padding={{ left: '1rem', right: '1rem' }}
             width={'100%'} height={'100%'}
-            overflow={{y: 'auto'}}
-            grid={{area: 'playlist'}}
+            overflow={{ y: 'auto' }}
+            grid={{ area: 'playlist' }}
             class={customScrollStyle}
             onItemClicked={this.onPlay}
           />
           <i-panel
             id="playerPanel"
-            padding={{top: '1rem', bottom: '1rem', left: '2.5rem', right: '2.5rem'}}
+            padding={{ top: '1rem', bottom: '1rem', left: '2.5rem', right: '2.5rem' }}
             width={'100%'} height={'100%'}
-            grid={{area: 'player'}}
+            grid={{ area: 'player' }}
             visible={false}
             mediaQueries={[
               {
                 maxWidth: '767px',
                 properties: {
-                  padding: {top: 0, bottom: 0, left: 0, right: 0}
+                  padding: { top: 0, bottom: 0, left: 0, right: 0 }
                 }
               },
               {
                 minWidth: '768px',
                 maxWidth: '900px',
                 properties: {
-                  padding: {top: '1rem', bottom: '1rem', left: '1rem', right: '1rem'}
+                  padding: { top: '1rem', bottom: '1rem', left: '1rem', right: '1rem' }
                 }
               }
             ]}
@@ -443,7 +315,7 @@ export default class ScomMediaPlayer extends Module {
               id="player"
               display='block'
               width={'100%'} height={'100%'}
-              background={{color: Theme.background.paper}}
+              background={{ color: Theme.background.paper }}
               onNext={this.onNext}
               onPrev={this.onPrev}
               onRandom={this.onRandom}

@@ -17,6 +17,7 @@ import {
 } from '@ijstech/components';
 import { ITrack } from '../inteface';
 import { customRangeStyle, marqueeStyle, customVideoStyle } from './index.css';
+import translations from '../translations.json';
 const Theme = Styles.Theme.ThemeVars;
 
 type callbackType = () => void;
@@ -80,7 +81,7 @@ export class ScomMediaPlayerPlayer extends Module {
   };
   private isRepeat: boolean = false;
   private isShuffle: boolean = false;
-  private currentTrack: ITrack|null = null;
+  private currentTrack: ITrack | null = null;
   private notUpdate: boolean = false;
   private firstClick: boolean = false;
   private isMute: boolean = false;
@@ -126,12 +127,12 @@ export class ScomMediaPlayerPlayer extends Module {
   }
 
   setData(data: IPlayer) {
-    this._data = {...data};
+    this._data = { ...data };
     this.renderUI();
   }
 
   private renderUI() {
-    this.pnlMute. visible = false;
+    this.pnlMute.visible = false;
     if (this.type === 'video') {
       this.video.visible = true;
       this.playerGrid.visible = false;
@@ -141,10 +142,10 @@ export class ScomMediaPlayerPlayer extends Module {
       this.playerGrid.visible = true;
       this.playerGrid.direction = 'horizontal';
       this.playerGrid.reverse = true;
-      this.playerGrid.padding = {left: '1rem', right: '1rem', top: '0.5rem', bottom: '0.5rem'};
-      this.pnlPrevNext.border = {style: 'none', width: 0};
-      this.pnlPrevNext.stack = {grow: '0', shrink: '1'};
-      this.currentTrack = {uri: this.url, title: 'No title', artist: 'No name', poster: ''};
+      this.playerGrid.padding = { left: '1rem', right: '1rem', top: '0.5rem', bottom: '0.5rem' };
+      this.pnlPrevNext.border = { style: 'none', width: 0 };
+      this.pnlPrevNext.stack = { grow: '0', shrink: '1' };
+      this.currentTrack = { uri: this.url, title: 'No title', artist: 'No name', poster: '' };
       this.timeLineGrid.templateAreas = [['start', 'range', 'end']];
       this.timeLineGrid.templateColumns = ['auto', '1fr', 'auto'];
       this.pnlControls.width = 'auto';
@@ -154,9 +155,9 @@ export class ScomMediaPlayerPlayer extends Module {
       this.playerGrid.visible = true;
       this.playerGrid.direction = 'vertical';
       this.playerGrid.reverse = false;
-      this.playerGrid.padding = {left: '1rem', right: '1rem', top: '1rem', bottom: '1rem'};
-      this.pnlPrevNext.border = {radius: '0.25rem', width: '1px', style: 'solid', color: Theme.divider};
-      this.pnlPrevNext.stack = {grow: '1', shrink: '1'};
+      this.playerGrid.padding = { left: '1rem', right: '1rem', top: '1rem', bottom: '1rem' };
+      this.pnlPrevNext.border = { radius: '0.25rem', width: '1px', style: 'solid', color: Theme.divider };
+      this.pnlPrevNext.stack = { grow: '1', shrink: '1' };
       this.timeLineGrid.templateAreas = [['range', 'range'], ['start', 'end']];
       this.timeLineGrid.templateColumns = ['1fr', '1fr'];
       this.pnlControls.width = '100%';
@@ -197,13 +198,13 @@ export class ScomMediaPlayerPlayer extends Module {
       this.togglePlay();
     } else {
       this.player.pause();
-      this.currentTrack = {...track};
+      this.currentTrack = { ...track };
       const type = this.getTrackType(track.uri);
       const src = this.getTrackSrc(track.uri);
-      this.player.src({src, type});
+      this.player.src({ src, type });
       this.renderTrack();
       const self = this;
-      this.player.ready(function() {
+      this.player.ready(function () {
         this.play().then(() => {
           if (!self.firstClick) {
             self.firstClick = true;
@@ -232,7 +233,7 @@ export class ScomMediaPlayerPlayer extends Module {
   }
 
   private renderTrack() {
-    const { title = 'No title', artist = 'No name', poster = ''} = this.currentTrack || {};
+    const { title = this.i18n.get('$no_title'), artist = this.i18n.get('$no_name'), poster = '' } = this.currentTrack || {};
     this.imgTrack.url = poster;
     this.lblArtist.caption = artist;
     this.lblTrack.caption = title;
@@ -327,9 +328,10 @@ export class ScomMediaPlayerPlayer extends Module {
     this.iconMute.name = value === 0 ? 'volume-mute' : 'volume-up';
   }
 
-  resizeLayout(mobile: boolean) {}
+  resizeLayout(mobile: boolean) { }
 
- async init() {
+  async init() {
+    this.i18n.init({ ...translations });
     super.init();
     this.onNext = this.getAttribute('onNext', true) || this.onNext;
     this.onPrev = this.getAttribute('onPrev', true) || this.onPrev;
@@ -344,7 +346,7 @@ export class ScomMediaPlayerPlayer extends Module {
 
   private initEvents() {
     const self = this;
-    this.player.ready(function() {
+    this.player.ready(function () {
       this.on('timeupdate', self.timeUpdateHandler);
       this.on('loadeddata', self.updateDuration);
       this.on('ended', self.endedHandler);
@@ -414,10 +416,10 @@ export class ScomMediaPlayerPlayer extends Module {
       });
 
       if (this.type === 'playlist') {
-        mediaSession.setActionHandler('previoustrack', function() {
+        mediaSession.setActionHandler('previoustrack', function () {
           self.playPrevTrack();
         });
-        mediaSession.setActionHandler('nexttrack', function() {
+        mediaSession.setActionHandler('nexttrack', function () {
           self.playNextTrack();
         });
       } else {
@@ -461,12 +463,12 @@ export class ScomMediaPlayerPlayer extends Module {
   }
 
   private updateMetadata() {
-    const { title = 'No title', artist = 'No name', poster = '' } = this.currentTrack || {};
+    const { title = this.i18n.get('$no_title'), artist = this.i18n.get('$no_name'), poster = '' } = this.currentTrack || {};
     navigator.mediaSession.metadata = new MediaMetadata({
       title,
       artist,
       album: '',
-      artwork: poster ? [{src: poster}] : []
+      artwork: poster ? [{ src: poster }] : []
     });
   }
 
@@ -475,16 +477,16 @@ export class ScomMediaPlayerPlayer extends Module {
       <i-vstack
         id="playerWrapper"
         width="100%" height={'100%'}
-        background={{color: Theme.background.paper}}
-        border={{radius: 'inherit'}}
+        background={{ color: Theme.background.paper }}
+        border={{ radius: 'inherit' }}
       >
         <i-video
           id="video"
           isStreaming={true}
-          margin={{left: 'auto', right: 'auto'}}
+          margin={{ left: 'auto', right: 'auto' }}
           display='block'
           width={'100%'} height={'100%'}
-          stack={{grow: '1', shrink: '1'}}
+          stack={{ grow: '1', shrink: '1' }}
           class={customVideoStyle}
           visible={false}
         ></i-video>
@@ -493,29 +495,29 @@ export class ScomMediaPlayerPlayer extends Module {
           direction='vertical'
           gap="1rem"
           width="100%" height={'100%'}
-          padding={{top: '1rem', bottom: '1rem', left: '1rem', right: '1rem'}}
+          padding={{ top: '1rem', bottom: '1rem', left: '1rem', right: '1rem' }}
           alignItems='center'
         >
           <i-image
             id="imgTrack"
             width={'13rem'} height={'auto'}
             minHeight={'6.25rem'}
-            margin={{left: 'auto', right: 'auto'}}
+            margin={{ left: 'auto', right: 'auto' }}
             display='block'
-            background={{color: Theme.background.default}}
+            background={{ color: Theme.background.default }}
           ></i-image>
           <i-hstack
             id="pnlInfo"
             horizontalAlignment='space-between'
             verticalAlignment='center'
-            margin={{top: '1rem', bottom: '1rem'}}
+            margin={{ top: '1rem', bottom: '1rem' }}
             width={'100%'}
             overflow={'hidden'}
             mediaQueries={[
               {
                 maxWidth: '767px',
                 properties: {
-                  margin: {top: 0, bottom: 0}
+                  margin: { top: 0, bottom: 0 }
                 }
               }
             ]}
@@ -525,7 +527,7 @@ export class ScomMediaPlayerPlayer extends Module {
                 <i-label
                   id="lblTrack"
                   caption=''
-                  font={{weight: 600, size: 'clamp(1rem, 0.95rem + 0.25vw, 1.25rem)'}}
+                  font={{ weight: 600, size: 'clamp(1rem, 0.95rem + 0.25vw, 1.25rem)' }}
                   lineHeight={'1.375rem'}
                   class={marqueeStyle}
                 ></i-label>
@@ -535,17 +537,17 @@ export class ScomMediaPlayerPlayer extends Module {
                 caption=''
                 maxWidth={'100%'}
                 textOverflow='ellipsis'
-                font={{size: 'clamp(0.75rem, 0.7rem + 0.25vw, 1rem)'}}
+                font={{ size: 'clamp(0.75rem, 0.7rem + 0.25vw, 1rem)' }}
               ></i-label>
             </i-vstack>
           </i-hstack>
-          <i-hstack id="pnlMute" visible={false} gap="1rem" verticalAlignment='center' margin={{right: '0.5rem'}}>
+          <i-hstack id="pnlMute" visible={false} gap="1rem" verticalAlignment='center' margin={{ right: '0.5rem' }}>
             <i-icon
               name="volume-up"
               width={'1.25rem'} height={'1.25rem'}
               fill={Theme.text.primary}
               id="iconMute" cursor='pointer'
-              stack={{shrink: '0'}}
+              stack={{ shrink: '0' }}
               onClick={this.onMute}
             ></i-icon>
             <i-range
@@ -556,7 +558,7 @@ export class ScomMediaPlayerPlayer extends Module {
               value={1}
               height="auto"
               width={'50px'}
-              stack={{shrink: '0', grow: '0'}}
+              stack={{ shrink: '0', grow: '0' }}
               onChanged={this.onVolume}
             />
           </i-hstack>
@@ -564,9 +566,9 @@ export class ScomMediaPlayerPlayer extends Module {
             id="timeLineGrid"
             width={'100%'}
             verticalAlignment='center'
-            gap={{column: '1rem', row: '0.5rem'}}
+            gap={{ column: '1rem', row: '0.5rem' }}
           >
-            <i-panel id="pnlRange" stack={{'grow': '1', 'shrink': '1'}} grid={{area: 'range'}}>
+            <i-panel id="pnlRange" stack={{ 'grow': '1', 'shrink': '1' }} grid={{ area: 'range' }}>
               <i-range
                 min={0}
                 max={1}
@@ -577,9 +579,9 @@ export class ScomMediaPlayerPlayer extends Module {
                 width={'100%'}
               />
             </i-panel>
-            <i-label id="lblStart" caption='0:00' font={{size: '0.875rem'}} grid={{area: 'start'}}></i-label>
-            <i-hstack verticalAlignment='center' horizontalAlignment='end' grid={{area: 'end'}}>
-              <i-label id='lblEnd' caption='0:00' font={{size: '0.875rem'}}></i-label>
+            <i-label id="lblStart" caption='0:00' font={{ size: '0.875rem' }} grid={{ area: 'start' }}></i-label>
+            <i-hstack verticalAlignment='center' horizontalAlignment='end' grid={{ area: 'end' }}>
+              <i-label id='lblEnd' caption='0:00' font={{ size: '0.875rem' }}></i-label>
             </i-hstack>
           </i-grid-layout>
           <i-hstack
@@ -599,7 +601,7 @@ export class ScomMediaPlayerPlayer extends Module {
             <i-panel
               id="pnlRandom"
               cursor='pointer'
-              hover={{opacity: 0.5}}
+              hover={{ opacity: 0.5 }}
               onClick={() => this.onShuffle()}
             >
               <i-icon
@@ -615,15 +617,15 @@ export class ScomMediaPlayerPlayer extends Module {
               columnsPerRow={3}
               id="pnlPrevNext"
               height={'2.5rem'}
-              border={{radius: '0.25rem', width: '1px', style: 'solid', color: Theme.divider}}
-              stack={{grow: '1', shrink: '1'}}
+              border={{ radius: '0.25rem', width: '1px', style: 'solid', color: Theme.divider }}
+              stack={{ grow: '1', shrink: '1' }}
             >
               <i-vstack
                 id="pnlPrev"
                 verticalAlignment='center'
                 horizontalAlignment='center'
                 cursor='pointer'
-                hover={{opacity: 0.5}}
+                hover={{ opacity: 0.5 }}
                 onClick={() => this.playPrevTrack()}
               >
                 <i-icon
@@ -636,7 +638,7 @@ export class ScomMediaPlayerPlayer extends Module {
                 verticalAlignment='center'
                 horizontalAlignment='center'
                 cursor='pointer'
-                hover={{opacity: 0.5}}
+                hover={{ opacity: 0.5 }}
                 onClick={this.onPlay}
               >
                 <i-icon
@@ -651,7 +653,7 @@ export class ScomMediaPlayerPlayer extends Module {
                 verticalAlignment='center'
                 horizontalAlignment='center'
                 cursor='pointer'
-                hover={{opacity: 0.5}}
+                hover={{ opacity: 0.5 }}
                 onClick={() => this.playNextTrack()}
               >
                 <i-icon
@@ -664,7 +666,7 @@ export class ScomMediaPlayerPlayer extends Module {
             <i-panel
               id="pnlRepeat"
               cursor='pointer'
-              hover={{opacity: 0.5}}
+              hover={{ opacity: 0.5 }}
               onClick={() => this.onRepeat()}
             >
               <i-icon

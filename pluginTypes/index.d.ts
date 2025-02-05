@@ -1,3 +1,4 @@
+/// <reference path="@ijstech/components/index.d.ts" />
 /// <amd-module name="@scom/scom-media-player/inteface.ts" />
 declare module "@scom/scom-media-player/inteface.ts" {
     export interface ITrack {
@@ -9,6 +10,9 @@ declare module "@scom/scom-media-player/inteface.ts" {
         uri: string;
         attributes?: any;
         timeline?: number;
+    }
+    export interface IMediaPlayer {
+        url: string;
     }
 }
 /// <amd-module name="@scom/scom-media-player/common/index.css.ts" />
@@ -24,6 +28,27 @@ declare module "@scom/scom-media-player/utils.ts" {
     export const isAudio: (url: string) => boolean;
     export const getPath: (url: string) => string;
     export const formatTime: (time: number | string) => string;
+}
+/// <amd-module name="@scom/scom-media-player/translations.json.ts" />
+declare module "@scom/scom-media-player/translations.json.ts" {
+    const _default: {
+        en: {
+            no_title: string;
+            no_name: string;
+            tracks: string;
+        };
+        "zh-hant": {
+            no_title: string;
+            no_name: string;
+            tracks: string;
+        };
+        vi: {
+            no_title: string;
+            no_name: string;
+            tracks: string;
+        };
+    };
+    export default _default;
 }
 /// <amd-module name="@scom/scom-media-player/common/playList.tsx" />
 declare module "@scom/scom-media-player/common/playList.tsx" {
@@ -193,50 +218,31 @@ declare module "@scom/scom-media-player/common/index.ts" {
 declare module "@scom/scom-media-player/index.css.ts" {
     export const customScrollStyle: string;
 }
-/// <amd-module name="@scom/scom-media-player" />
-declare module "@scom/scom-media-player" {
-    import { Module, Container, ControlElement, IDataSchema } from '@ijstech/components';
-    interface ScomMediaPlayerElement extends ControlElement {
-        url?: string;
+/// <amd-module name="@scom/scom-media-player/model.ts" />
+declare module "@scom/scom-media-player/model.ts" {
+    import { IDataSchema, Module } from '@ijstech/components';
+    import { IMediaPlayer } from "@scom/scom-media-player/inteface.ts";
+    interface IModelOptions {
+        updateWidget: () => Promise<void>;
+        resize: () => void;
     }
-    global {
-        namespace JSX {
-            interface IntrinsicElements {
-                ["i-scom-media-player"]: ScomMediaPlayerElement;
-            }
-        }
-    }
-    export default class ScomMediaPlayer extends Module {
-        private playList;
-        private player;
-        private playlistEl;
-        private playerPanel;
-        private parser;
-        tag: any;
-        private _theme;
+    export class Model {
+        private module;
+        private options;
         private _data;
-        private isVideo;
-        private parsedData;
-        constructor(parent?: Container, options?: any);
-        static create(options?: ScomMediaPlayerElement, parent?: Container): Promise<ScomMediaPlayer>;
+        private _theme;
+        private _parsedData;
+        constructor(module: Module, options: IModelOptions);
         get url(): string;
         set url(value: string);
-        private setData;
-        private getData;
-        private loadLib;
-        private renderUI;
-        private renderStreamData;
-        private renderAudio;
-        private checkParsedData;
-        private isEmptyObject;
-        private renderVideo;
-        private renderPlaylist;
-        onHide(): void;
-        private onPlay;
-        private onNext;
-        private onPrev;
-        private onRandom;
-        private onStateChanged;
+        get parsedData(): any;
+        getData(): IMediaPlayer;
+        setData(value: IMediaPlayer): Promise<void>;
+        getTag(): any;
+        setTag(value: any): Promise<void>;
+        private updateTag;
+        private updateStyle;
+        private updateTheme;
         getConfigurators(): {
             name: string;
             target: string;
@@ -257,13 +263,75 @@ declare module "@scom/scom-media-player" {
         }[];
         private getPropertiesSchema;
         private _getActions;
-        private getTag;
-        private setTag;
-        private updateTag;
-        private updateStyle;
-        private updateTheme;
+        private loadLib;
+        handleStreamData(): Promise<void>;
+        isEmptyObject(value: any): boolean;
+    }
+}
+/// <amd-module name="@scom/scom-media-player" />
+declare module "@scom/scom-media-player" {
+    import { Module, Container, ControlElement } from '@ijstech/components';
+    import { IMediaPlayer } from "@scom/scom-media-player/inteface.ts";
+    interface ScomMediaPlayerElement extends ControlElement {
+        url?: string;
+    }
+    global {
+        namespace JSX {
+            interface IntrinsicElements {
+                ["i-scom-media-player"]: ScomMediaPlayerElement;
+            }
+        }
+    }
+    export default class ScomMediaPlayer extends Module {
+        private model;
+        private playList;
+        private player;
+        private playlistEl;
+        private playerPanel;
+        tag: any;
+        private isVideo;
+        constructor(parent?: Container, options?: any);
+        static create(options?: ScomMediaPlayerElement, parent?: Container): Promise<ScomMediaPlayer>;
+        get url(): string;
+        set url(value: string);
+        private get parsedData();
+        getConfigurators(): {
+            name: string;
+            target: string;
+            getActions: () => {
+                name: string;
+                icon: string;
+                command: (builder: any, userInputData: any) => {
+                    execute: () => void;
+                    undo: () => void;
+                    redo: () => void;
+                };
+                userInputDataSchema: import("@ijstech/components").IDataSchema;
+            }[];
+            getData: any;
+            setData: any;
+            getTag: any;
+            setTag: any;
+        }[];
+        getTag(): any;
+        setTag(value: any): void;
+        private setData;
+        getData(): IMediaPlayer;
+        private renderUI;
+        private renderStreamData;
+        private renderAudio;
+        private checkParsedData;
+        private renderVideo;
+        private renderPlaylist;
+        onHide(): void;
+        private onPlay;
+        private onNext;
+        private onPrev;
+        private onRandom;
+        private onStateChanged;
         private resizeLayout;
         refresh(skipRefreshControls?: boolean): void;
+        private initModel;
         init(): void;
         render(): any;
     }
