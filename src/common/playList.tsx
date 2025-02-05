@@ -99,7 +99,7 @@ export class ScomMediaPlayerPlaylist extends Module {
   }
 
   async setData(data: IPlaylist) {
-    this._data = {...data};
+    this._data = { ...data };
     await this.renderUI();
   }
 
@@ -130,25 +130,25 @@ export class ScomMediaPlayerPlaylist extends Module {
             horizontalAlignment='space-between'
             gap={'0.75rem'}
             height={'3.313rem'}
-            border={{radius: '0.5rem'}}
-            margin={{top: '0.25rem', bottom: '0.25rem'}}
-            padding={{left: '1rem', right: '1rem', top: '0.5rem', bottom: '0.5rem'}}
-            background={{color: Theme.action.hoverBackground}}
+            border={{ radius: '0.5rem' }}
+            margin={{ top: '0.25rem', bottom: '0.25rem' }}
+            padding={{ left: '1rem', right: '1rem', top: '0.5rem', bottom: '0.5rem' }}
+            background={{ color: Theme.action.hoverBackground }}
             cursor='pointer'
-            hover={{backgroundColor: Theme.background.main}}
+            hover={{ backgroundColor: Theme.background.main }}
             class={trackStyle}
             onClick={(target: Control, event: MouseEvent) => this.onTrackClick(target, event, track)}
           >
             <i-hstack verticalAlignment='center' gap={'0.75rem'} height={'100%'}>
               <i-panel
-                stack={{shrink: '0'}}
+                stack={{ shrink: '0' }}
                 width={'2.5rem'} height={'2.5rem'}
               >
                 <i-image
                   url={track.poster || ''}
                   width={'100%'} height={'100%'}
                   display='inline-block'
-                  background={{color: Theme.background.modal}}
+                  background={{ color: Theme.background.modal }}
                   objectFit={'cover'}
                 ></i-image>
                 <i-icon
@@ -162,21 +162,21 @@ export class ScomMediaPlayerPlaylist extends Module {
               </i-panel>
               <i-vstack gap="0.25rem" verticalAlignment='center'>
                 <i-label
-                  caption={track.title || '$no_title'}
-                  font={{size: '1rem'}}
+                  caption={track.title || this.i18n.get('$no_title')}
+                  font={{ size: '1rem' }}
                   wordBreak='break-all'
                   lineClamp={1}
                 ></i-label>
                 <i-label
-                  caption={track.artist || '$no_name'}
-                  font={{size: '0.875rem', color: Theme.text.secondary}}
+                  caption={track.artist || this.i18n.get('$no_name')}
+                  font={{ size: '0.875rem', color: Theme.text.secondary }}
                   textOverflow='ellipsis'
                 ></i-label>
               </i-vstack>
             </i-hstack>
             <i-label
               caption={formatTime(track.duration)}
-              font={{size: '0.875rem', color: Theme.text.secondary}}
+              font={{ size: '0.875rem', color: Theme.text.secondary }}
             ></i-label>
           </i-hstack>
         )
@@ -223,7 +223,7 @@ export class ScomMediaPlayerPlaylist extends Module {
   }
 
   async init() {
-    this.i18n.init({...translations});
+    this.i18n.init({ ...translations });
     super.init();
     this.onItemClicked = this.getAttribute('onItemClicked', true) || this.onItemClicked;
     const data = this.getAttribute('data', true);
@@ -232,24 +232,24 @@ export class ScomMediaPlayerPlaylist extends Module {
 
   render() {
     return (
-      <i-vstack width={'100%'} gap="1rem" padding={{top: '0.5rem'}}>
+      <i-vstack width={'100%'} gap="1rem" padding={{ top: '0.5rem' }}>
         <i-hstack
           id="pnlHeader"
           verticalAlignment='center' gap="0.5rem"
-          background={{color: Theme.background.paper}}
-          padding={{top: '0.75rem', bottom: '0.75rem', left: '1rem', right: '1rem'}}
+          background={{ color: Theme.background.paper }}
+          padding={{ top: '0.75rem', bottom: '0.75rem', left: '1rem', right: '1rem' }}
         >
           <i-image
             id="imgPlaylist"
             url=""
             width={'8rem'} height={'auto'}
             objectFit={'cover'}
-            border={{radius: '0.25rem'}}
-            stack={{shrink: '0'}}
+            border={{ radius: '0.25rem' }}
+            stack={{ shrink: '0' }}
           ></i-image>
           <i-vstack gap="0.25rem">
-            <i-label caption='' font={{size: '1.25rem'}} id='lblTitle'></i-label>
-            <i-label caption='' font={{size: '0.875rem', color: Theme.text.secondary}} id='lblDesc'></i-label>
+            <i-label caption='' font={{ size: '1.25rem' }} id='lblTitle'></i-label>
+            <i-label caption='' font={{ size: '0.875rem', color: Theme.text.secondary }} id='lblDesc'></i-label>
           </i-vstack>
         </i-hstack>
         {/* <i-hstack
@@ -264,8 +264,8 @@ export class ScomMediaPlayerPlaylist extends Module {
             <i-icon name="heart" width={'1.25rem'} height={'1.25rem'} fill={Theme.text.primary}></i-icon>
           </i-panel>
         </i-hstack> */}
-        <i-label caption='$tracks' font={{weight: 600, size: '1rem'}}></i-label>
-        <i-vstack id="pnlPlaylist" margin={{ bottom: '0.75rem'}}></i-vstack>
+        <i-label caption="$tracks" font={{ weight: 600, size: '1rem' }}></i-label>
+        <i-vstack id="pnlPlaylist" margin={{ bottom: '0.75rem' }}></i-vstack>
       </i-vstack>
     );
   }

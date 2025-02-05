@@ -8,3 +8,7 @@ export interface ITrack {
   attributes?: any;
   timeline?: number;
 }
+
+export interface IMediaPlayer {
+  url: string;
+}
